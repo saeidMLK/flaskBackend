@@ -1,0 +1,36 @@
+{% extends 'main/base.html' %}
+
+{% block title %} Sign Up {% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Sign Up</h1>
+    <form method="post">
+        {{ form.csrf_token }}
+        <div class="mb-3">
+            {{ form.username.label(class="form-label") }}
+            {{ form.username(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.email.label(class="form-label") }}
+            {{ form.email(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.password.label(class="form-label") }}
+            {{ form.password(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.confirm_password.label(class="form-label") }}
+            {{ form.confirm_password(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.role.label(class="form-label") }}
+            {{ form.role(class="form-select") }}
+        </div>
+{#        <p>Have an account? Login <a href="{{ url_for('login') }}">Here</a>!</p>#}
+        {{ form.submit(class="btn btn-success")}}
+    </form>
+</div>
+{% endblock %}
+
+

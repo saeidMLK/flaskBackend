@@ -1,0 +1,81 @@
+{% extends 'access/admin/admin_base.html' %}
+
+{% block content %}
+    <h2>Database Management</h2>
+
+    <form action="{{ url_for('admin_db_management') }}" method="post">
+        <h5 style="margin-top: 70px">Solve a conflict:</h5>
+        {{ conflict_search_form.hidden_tag() }}
+        <button type="submit" name="search" class="btn btn-primary btn-sm" style="margin-top: 10px">Find First Conflict
+            Row
+        </button>
+    </form>
+
+    {% if conflict_row %}
+        <h3>First Conflict Row</h3>
+        <pre>{{ conflict_row }}</pre>
+        <form action="{{ url_for('admin_db_management') }}" method="post">
+            {{ conflict_search_form.hidden_tag() }}
+            <p>Data: {{ conflict_row['data'] }}</p>
+            <input type="hidden" name="row_id" value="{{ conflict_row['_id'] }}">
+            {{ conflict_search_form.label(class="form-control") }}
+            <button type="submit" name="set_label" class="btn btn-primary btn-sm" style="margin-top: 20px">Set Label
+            </button>
+        </form>
+    {% else %}
+        {% if request.method == 'POST' %}
+            <p>No conflict rows found.</p>
+        {% endif %}
+    {% endif %}
+
+    <h5 style="margin-top: 80px">Extract Database</h5>
+    <form action="{{ url_for('extract_db') }}" method="post">
+        {{ extract_db_form.hidden_tag() }}
+        <div class="form-group">
+            <label for="collection_name">Chose the collection:</label>
+            {{ extract_db_form.collection_name(class="form-control") }}
+        </div>
+        {{ extract_db_form.submit(class="btn btn-primary btn-sm", style="margin-top: 10px") }}
+    </form>
+
+    {% if extracted %}
+        <a href="{{ url_for('download_file', collection_name=collection_name) }}" class="btn btn-success"
+           style="background:#1eaf1e; margin-top: 20px">Download Extracted
+            DB</a>
+    {% endif %}
+
+    <h5 style="margin-top: 80px">Import Database Collection</h5>
+    <form action="{{ url_for('import_db') }}" method="post" enctype="multipart/form-data">
+        {{ import_db_form.hidden_tag() }}
+        <div class="form-group">
+            <label for="collection_name">Collection Name:</label>
+            {{ import_db_form.collection_name(class="form-control") }}
+        </div>
+        <div class="form-group">
+            <label for="file">JSON File:</label>
+            {{ import_db_form.file(class="form-control") }}
+        </div>
+        {{ import_db_form.submit(class="btn btn-primary btn-warning", style="margin-top: 10px") }}
+    </form>
+
+
+
+    <h5 style="margin-top: 80px">Set Data Labels</h5>
+    <form action="{{ url_for('admin_db_management') }}" method="post" id="optionForm" onsubmit="updateHiddenField()">
+        {{ admin_label_config_form.hidden_tag() }}
+        {{ admin_label_config_form.labels(id='stringfield') }}  <!-- Add the hidden field here -->
+        <div class="input-group" style="width: 50%">
+            {{ admin_label_config_form.new_option.label(style="margin-right: 10px; padding-top: 5px") }} {{ admin_label_config_form.new_option(class="form-control", style="margin-right: 10px", size=20) }}
+            <button type="button" onclick="addOption()" class="btn btn-primary btn-sm">Add</button>
+        </div>
+        <select id="dynamicSelect" name="dynamicSelect" style="width: 100%; padding: 8px; margin-top: 10px">
+            <option value="" disabled selected>Here are added labels</option>
+        </select>
+        <button type="submit" name="save_labels" class="btn btn-primary btn-sm" style="margin-top: 10px; margin-bottom: 50px">
+            Submit Labels
+        </button>
+    </form>
+
+    <script src="{{ url_for('static', filename='js/admin_db.js') }}"></script>
+
+{% endblock %}

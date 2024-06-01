@@ -1,0 +1,29 @@
+{% extends 'access/admin/admin_base.html' %}
+
+{% block content %}
+    <h2>Reports</h2>
+
+    {% if users %}
+        <h5 style="margin-top: 70px">Select the user you want to get a report of:</h5>
+        <form action="{{ url_for('admin_report') }}" method="post">
+            {{ report_task_form.hidden_tag() }}
+            {{ report_task_form.username(class="form-control") }}
+            <button type="submit" name="task" value="labels" class="btn btn-primary btn-sm" style="margin: 20px;">Get Number of Labels</button>
+            <button type="submit" name="task" value="updates" class="btn btn-primary btn-sm" style="margin: 20px;">Get Number of Updates</button>
+        </form>
+    {% else %}
+        <p>No users found.</p>
+    {% endif %}
+
+    {% if report_data %}
+        <div class="report-result" style="margin: 20px;">
+            <h3>Report for {{ report_data.username }}</h3>
+            {% if report_data.type == 'labels' %}
+                <p>Number of Labels: {{ report_data.number_of_labels }}</p>
+                <p>Consensus Degree: {{ report_data.consensus_degree }}</p>
+            {% elif report_data.type == 'updates' %}
+                <p>Number of Updates: {{ report_data.number_of_updates }}</p>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endblock %}

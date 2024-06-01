@@ -1,0 +1,6 @@
+.venv
+.env
+localhost.crt
+localhost.key
+static/db
+

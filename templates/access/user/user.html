@@ -1,0 +1,39 @@
+{% extends 'main/base.html' %}
+{% block title %} User Page {% endblock %}
+{% block navitem_right %}
+
+{% endblock %}
+{% block navitem_left %}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+    </li>
+{% endblock %}
+
+
+{% block content %}
+    <h2>Data Labeling</h2>
+    <form action="{{ url_for('read_one_row_data') }}" method="post">
+        {{ read_one_row_form.hidden_tag() }}
+        {{ read_one_row_form.row_id(class="form-control", type="hidden") }}
+        {{ read_one_row_form.username(class="form-control", type="hidden") }}
+        <div class="form-group">
+            {{ read_one_row_form.data.label }}{{ read_one_row_form.data(class="form-control", readonly=True) }}
+        </div>
+
+    </form>
+
+   <h5 style="margin-top: 70px">Add Label</h5>
+    <form action="{{ url_for('add_label') }}" method="post">
+        {{ add_label_form.hidden_tag() }}
+        {{ add_label_form.row_id(class="form-control", type="hidden") }}
+        {{ add_label_form.username(class="form-control", type="hidden") }}
+        <div class="form-group">
+            {{ add_label_form.label.label }}{{ add_label_form.label(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ add_label_form.submit(class="btn btn-primary btn-sm", style="margin-top: 10px") }}
+        </div>
+    </form>
+
+{% endblock %}
+
