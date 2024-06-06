@@ -9,6 +9,7 @@ from config import ConfigDB
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
+    captcha = StringField('Enter CAPTCHA', validators=[DataRequired()])
     submit = SubmitField('Login')
 
 

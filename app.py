@@ -11,7 +11,7 @@ from config import ConfigApp
 from flask_cors import CORS
 from functools import wraps
 from flask_wtf.csrf import CSRFProtect
-from extensions import sanitize_input  # , limiter
+from extensions import sanitize_input, generate_captcha, clear_old_captchas  # , limiter
 from bson.objectid import ObjectId
 
 app = Flask(__name__)
@@ -40,25 +40,34 @@ def home():
     return render_template('main/home.html')
 
 
-@app.route('/login', methods=['GET', 'POST'])
 # @limiter.limit("3 per minute")
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
-    if form.validate_on_submit():
-        sanitized_username = sanitize_input(form.username.data)
-        user = find_user(sanitized_username)
-        if user and check_password(user, form.password.data):
-            login_user(user)
-            role = user.role
-            if role == 'admin':
-                flash(f'Login successful, admin access!', 'success')
-                return redirect(url_for('admin'))
+    captcha_text, captcha_path = generate_captcha()
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            entered_captcha = form.captcha.data.lower()
+            actual_captcha = request.form.get('captcha_text').lower()
+            if entered_captcha == actual_captcha:
+                sanitized_username = sanitize_input(form.username.data)
+                user = find_user(sanitized_username)
+                if user and check_password(user, form.password.data):
+                    login_user(user)
+                    role = user.role
+                    if role == 'admin':
+                        flash(f'Login successful, admin access!', 'success')
+                        return redirect(url_for('admin'))
+                    else:
+                        flash(f'Login successful, user access!', 'success')
+                        return redirect(url_for('user'))
+                else:
+                    flash('Invalid username or password', 'danger')
             else:
-                flash(f'Login successful, user access!', 'success')
-                return redirect(url_for('user'))
+                flash('Invalid CAPTCHA. Please try again.', 'danger')
         else:
-            flash('Invalid username or password', 'danger')
-    return render_template('registration/login.html', form=form)
+            flash('Form validation failed. Please try again.', 'danger')
+    return render_template('registration/login.html', form=form, captcha_text=captcha_text, captcha_image_url=captcha_path)
 
 
 @app.route('/sign-up', methods=['GET', 'POST'])

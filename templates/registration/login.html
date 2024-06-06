@@ -3,18 +3,28 @@
 {% block title %} Login {% endblock %}
 
 {% block content %}
-<form method="post" action="{{ url_for('login') }}">
-    {{ form.csrf_token }}
-    {{ form.hidden_tag() }}
-    <div class="mb-3">
-        {{ form.username.label(class="form-label") }}
-        {{ form.username(class="form-control") }}
-    </div>
-    <div class="mb-3">
-        {{ form.password.label(class="form-label") }}
-        {{ form.password(class="form-control") }}
-    </div>
-{#    <p>Don't have an account? Create one <a href="/sign-up">Here</a>!</p>#}
-    {{ form.submit(class="btn btn-success") }}
-</form>
+    <form method="post" action="{{ url_for('login') }}">
+        {{ form.csrf_token }}
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.username.label(class="form-label") }}
+            {{ form.username(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.password.label(class="form-label") }}
+            {{ form.password(class="form-control") }}
+        </div>
+        <div class="mb-3">
+        <img src="{{ captcha_image_url }}" alt="CAPTCHA">
+        </div>
+        <div class="mb-3">
+            {{ form.captcha.label(class="form-label") }}
+            {{ form.captcha(class="form-control") }}
+        </div>
+        <input type="hidden" name="captcha_text" value="{{ captcha_text }}">
+        {#    <p>Don't have an account? Create one <a href="/sign-up">Here</a>!</p>#}
+        <div class="mb-3">
+            {{ form.submit(class="btn btn-success") }}
+        </div>
+    </form>
 {% endblock %}
