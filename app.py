@@ -1,5 +1,10 @@
 import json
 import bson
+from config import ConfigApp
+from flask_cors import CORS
+from functools import wraps
+from flask_wtf.csrf import CSRFProtect
+from bson.objectid import ObjectId
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask import Flask, render_template, redirect, url_for, flash, request, send_file
 from forms import LoginForm, SignUpForm, RemoveUserForm, ExtractDBForm, AddLabelForm, ReadOneRowDataForm, \
@@ -7,16 +12,11 @@ from forms import LoginForm, SignUpForm, RemoveUserForm, ExtractDBForm, AddLabel
 from models import find_user, add_user, check_password, find_user_by_id, remove_user_by_name, get_all_users, \
     extract_db_collection, read_one_row_of_data, add_label_to_data, get_user_performance, get_first_conflict_row, \
     set_admin_label_for_conflicts, set_admin_label_config, import_db_collection, convert_oid, rename_collection_if_exist
-from config import ConfigApp
-from flask_cors import CORS
-from functools import wraps
-from flask_wtf.csrf import CSRFProtect
 from extensions import sanitize_input, generate_captcha, clear_old_captchas  # , limiter
-from bson.objectid import ObjectId
 
 app = Flask(__name__)
 app.config.from_object(ConfigApp)
-CORS(app, resources={r"/*": {"origins": app.config['CORS_ORIGINS']}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": ConfigApp.CORS_ORIGINS}}, supports_credentials=True)
 csrf = CSRFProtect(app)  # to prevent CSRF attacks
 # limiter.init_app(app)
 
@@ -167,10 +167,10 @@ def admin_report():
                 'number_of_labels': number_of_labels,
                 'consensus_degree': consensus_degree
             }
-        elif task == 'updates':
+        elif task == 'data':
             number_of_updates = 33
             report_data = {
-                'type': 'updates',
+                'type': 'data',
                 'username': username,
                 'number_of_updates': number_of_updates
             }

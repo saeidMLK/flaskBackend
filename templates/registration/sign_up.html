@@ -1,12 +1,16 @@
 {% extends 'main/base.html' %}
 
-{% block title %} Sign Up {% endblock %}
-
+{% block title %} ایجاد کاربر {% endblock %}
+{% block navitem_left %}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('admin_user_management') }}">بازگشت</a>
+    </li>
+{% endblock %}
 {% block content %}
 <div class="container">
-    <h1>Sign Up</h1>
+    <h1 style="padding-bottom: 20px">ایجاد کاربر</h1>
     <form method="post">
-        {{ form.csrf_token }}
+        {{ form.hidden_tag() }}
         <div class="mb-3">
             {{ form.username.label(class="form-label") }}
             {{ form.username(class="form-control") }}

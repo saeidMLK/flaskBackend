@@ -1,24 +1,24 @@
 {% extends 'access/admin/admin_base.html' %}
 
 {% block content %}
-    <h2>User Management</h2>
+    <h2>مدیریت کاربران</h2>
 
 
-    <h5 style="margin-top: 70px">Create user:</h5>
-    <p>Do you want to create an account?</p>
-    <a href="{{ url_for('sign_up') }}" class="btn btn-primary btn-sm">Sign Up</a>
+    <h5 style="margin-top: 70px">ساخت کاربر جدید:</h5>
+    <p>آیا میخواهید یک کاربر جدید اضافه کنید؟</p>
+    <a href="{{ url_for('sign_up') }}" class="btn btn-primary btn-sm">ایجاد کاربر</a>
 
 
     {% if users %}
-        <h5 style="margin-top: 70px">Remove user</h5>
+        <h5 style="margin-top: 70px">حذف کاربر</h5>
         <form action="{{ url_for('remove_user') }}" method="post">
             {{ remove_user_form.hidden_tag() }}
-            <p>Select the user you want to remove:</p>
+            <p>کاربری که مایل به حذف آن هستید را انتخاب کنید:</p>
             {{ remove_user_form.username(class="form-control") }}
             {{ remove_user_form.submit(class="btn btn-danger btn-sm", style="margin-top: 10px") }}
         </form>
     {% else %}
-        <p>No users found.</p>
+        <p>کاربری یافت نشد.</p>
     {% endif %}
 
 

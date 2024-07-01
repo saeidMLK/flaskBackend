@@ -1,17 +1,17 @@
 {% extends 'main/base.html' %}
-{% block title %} User Page {% endblock %}
+{% block title %} صفحه کاربر {% endblock %}
 {% block navitem_right %}
 
 {% endblock %}
 {% block navitem_left %}
     <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+        <a class="nav-link" href="{{ url_for('logout') }}">خروج</a>
     </li>
 {% endblock %}
 
 
 {% block content %}
-    <h2>Data Labeling</h2>
+    <h2>برچسب گذاری</h2>
     <form action="{{ url_for('read_one_row_data') }}" method="post">
         {{ read_one_row_form.hidden_tag() }}
         {{ read_one_row_form.row_id(class="form-control", type="hidden") }}
@@ -22,7 +22,7 @@
 
     </form>
 
-   <h5 style="margin-top: 70px">Add Label</h5>
+   <h5 style="margin-top: 70px">افزودن برچسب</h5>
     <form action="{{ url_for('add_label') }}" method="post">
         {{ add_label_form.hidden_tag() }}
         {{ add_label_form.row_id(class="form-control", type="hidden") }}

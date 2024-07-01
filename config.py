@@ -28,11 +28,12 @@ class ConfigDB():
 
 
 class ConfigApp:
-    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = False
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = 'None'
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CORS_ORIGINS = "*"
     SECRET_KEY = os.getenv('SECRET_KEY')
-    CORS_ORIGINS = "https://localhost:3000"
-    cert = 'localhost.crt'
-    key = 'localhost.key'
+    WTF_CSRF_SECRET_KEY = os.getenv('WTF_CSRF_SECRET_KEY')
+    # cert = 'localhost.crt'
+    # key = 'localhost.key'
 

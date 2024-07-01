@@ -7,30 +7,36 @@ import models
 from config import ConfigDB
 
 class LoginForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
-    captcha = StringField('Enter CAPTCHA', validators=[DataRequired()])
-    submit = SubmitField('Login')
+    username = StringField('نام کاربری', validators=[DataRequired()])
+    password = PasswordField('کلمه عبور', validators=[DataRequired()])
+    captcha = StringField('کلمات تصویر را وارد کنید:', validators=[DataRequired()])
+    submit = SubmitField('ورود')
 
 
 class SignUpForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
-    email = StringField('Email', validators=[Email()])
-    password = PasswordField('Password', validators=[DataRequired()])
-    confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
-    role = SelectField('Role', choices=[('user', 'User'), ('admin', 'Admin')], validators=[DataRequired()])
-    submit = SubmitField('Sign Up')
+    username = StringField('نام کاربری', validators=[DataRequired()])
+    category = SelectField('داده', choices=models.get_category_names(), validators=[DataRequired()])
+    password = PasswordField('کلمه عبور', validators=[DataRequired()])
+    confirm_password = PasswordField('تکرار کلمه عبور', validators=[DataRequired(), EqualTo('password')])
+    role = SelectField('نقش', choices=[('user', 'User'), ('admin', 'Admin')], validators=[DataRequired()])
+    submit = SubmitField('ایجاد کاربر')
 
+    def set_category_choices(self):
+        choices = models.get_category_names()
+        self.category.choices = choices
 
 class RemoveUserForm(FlaskForm):
-    username = SelectField('Username', validators=[DataRequired()], coerce=str)
-    submit = SubmitField('Remove')
+    username = SelectField('نام کاربری', validators=[DataRequired()], coerce=str)
+    submit = SubmitField('حذف')
 
 
 class ExtractDBForm(FlaskForm):
-    collection_name = SelectField('Collection Name', choices=models.get_db_collection_names(), validators=[DataRequired()])
-    submit = SubmitField('Extract Database')
+    collection_name = SelectField('نام دسته بندی', choices=models.get_db_collection_names(), validators=[DataRequired()])
+    submit = SubmitField('استخراج پایگاه داده')
 
+    def set_collections_choices(self):
+        choices = models.get_db_collection_names()
+        self.collection_name.choices = choices
 
 class ImportDBForm(FlaskForm):
     collection_name = SelectField('Collection Name', choices=models.get_db_collection_names(), validators=[DataRequired()])
