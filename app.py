@@ -340,4 +340,5 @@ def add_label():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=443, ssl_context=(ConfigApp.cert, ConfigApp.key))
+    app.run(debug=True, host='0.0.0.0', port=4001)
+# , ssl_context=(ConfigApp.cert, ConfigApp.key)
