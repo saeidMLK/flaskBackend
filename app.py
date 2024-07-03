@@ -1,4 +1,7 @@
 import json
+import math
+import os
+
 import bson
 from config import ConfigApp
 from flask_cors import CORS
@@ -11,7 +14,8 @@ from forms import LoginForm, SignUpForm, RemoveUserForm, ExtractDBForm, AddLabel
     ReportTaskForm, ConflictSearchForm, AdminLabelConfigForm, ImportDBForm
 from models import find_user, add_user, check_password, find_user_by_id, remove_user_by_name, get_all_users, \
     extract_db_collection, read_one_row_of_data, add_label_to_data, get_user_performance, get_first_conflict_row, \
-    set_admin_label_for_conflicts, set_admin_label_config, import_db_collection, convert_oid, rename_collection_if_exist
+    set_admin_label_for_conflicts, set_admin_label_config, import_db_collection, convert_oid, \
+    rename_collection_if_exist, get_user_labels, get_db_collection_names, get_user_collection
 from extensions import sanitize_input, generate_captcha, clear_old_captchas  # , limiter
 
 app = Flask(__name__)
@@ -56,15 +60,15 @@ def login():
                     login_user(user)
                     role = user.role
                     if role == 'admin':
-                        flash(f'Login successful, admin access!', 'success')
+                        flash(f'ورود موفق، دسترسی مدیر!', 'success')
                         return redirect(url_for('admin'))
                     else:
-                        flash(f'Login successful, user access!', 'success')
+                        flash(f'ورود موفق، دسترسی کاربر!', 'success')
                         return redirect(url_for('user'))
                 else:
-                    flash('Invalid username or password', 'danger')
+                    flash('نام کاربری یا کلمه عبور اشتباه است.', 'danger')
             else:
-                flash('Invalid CAPTCHA. Please try again.', 'danger')
+                flash('کلمات تصوبر به درستی وارد نشده، دوباره تلاش کنید!', 'danger')
         else:
             flash('Form validation failed. Please try again.', 'danger')
     return render_template('registration/login.html', form=form, captcha_text=captcha_text, captcha_image_url=captcha_path)
@@ -77,10 +81,10 @@ def sign_up():
     if form.validate_on_submit():
         # Process the form data (e.g., save user to database)
         sanitized_username = sanitize_input(form.username.data)
-        if add_user(sanitized_username, form.password.data, form.role.data):
-            flash('Sign-up successful!', 'success')
+        if add_user(sanitized_username, form.password.data,form.collections.data, form.role.data):
+            flash('ایجاد کاربر جدید با موفقیت انجام شد.', 'success')
         else:
-            flash('Not successful', 'danger')
+            flash('ناموفق', 'danger')
         return redirect(url_for('admin_user_management'))
     return render_template('registration/sign_up.html', form=form)
 
@@ -89,7 +93,7 @@ def sign_up():
 @login_required
 def logout():
     logout_user()
-    flash('You have been logged out.', 'success')
+    flash('شما با موفقیت خارج شدید.', 'success')
     return redirect(url_for('home'))
 
 
@@ -99,7 +103,7 @@ def role_required(role):
         @login_required
         def decorated_view(*args, **kwargs):
             if current_user.role != role:
-                flash('You do not have access to this page. Login required!', 'danger')
+                flash('شما به این صفحه دسترسی ندارید، لطفا وارد شوید.', 'danger')
                 return redirect(url_for('home'))
             return fn(*args, **kwargs)
 
@@ -123,7 +127,7 @@ def admin_user_management():
     if users:
         remove_user_form.username.choices = [(user.username, f"{user.username} -- {user.role}") for user in users]
     else:
-        flash('No users found.', 'warning')
+        flash('کاربری یافت نشد.', 'warning')
         remove_user_form = None
     return render_template('access/admin/admin_user_management.html', users=users, remove_user_form=remove_user_form)
 
@@ -138,9 +142,9 @@ def remove_user():
     if remove_user_form.validate_on_submit():
         username = remove_user_form.username.data
         if remove_user_by_name(username):
-            flash('User has been removed successfully.', 'success')
+            flash('کابر با موفقیت حذف شد.', 'success')
         else:
-            flash('Admin cannot be removed!', 'danger')
+            flash('مدیر قابل حذف شدن نیست.', 'danger')
     else:
         flash('An error occurred. Please try again.', 'danger')
     return redirect(url_for('admin_user_management'))
@@ -153,13 +157,14 @@ def admin_report():
     report_task_form = ReportTaskForm()
     if users:
         report_task_form.username.choices = [(user.username, f"{user.username} -- {user.role}") for user in users]
-
     report_data = {}
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    username = None
+
     if report_task_form.validate_on_submit():
         username = report_task_form.username.data
-        task = request.form['task']
-
-        if task == 'labels':
+        if 'labels' in request.form:
             number_of_labels, consensus_degree = get_user_performance(username)
             report_data = {
                 'type': 'labels',
@@ -167,12 +172,31 @@ def admin_report():
                 'number_of_labels': number_of_labels,
                 'consensus_degree': consensus_degree
             }
-        elif task == 'data':
-            number_of_updates = 33
+        if 'data' in request.form:
+            rows, total_rows = get_user_labels(username, page, per_page)
+            total_pages = math.ceil(total_rows / per_page)
             report_data = {
                 'type': 'data',
                 'username': username,
-                'number_of_updates': number_of_updates
+                'total_pages': total_pages,
+                'page': page,
+                'per_page': per_page,
+                'rows': rows
+            }
+    else:
+        # Handle the case when navigating through pages without form submission
+        username = request.args.get('username')
+        report_task_form.username.data = username
+        if username:
+            rows, total_rows = get_user_labels(username, page, per_page)
+            total_pages = math.ceil(total_rows / per_page)
+            report_data = {
+                'type': 'data',
+                'username': username,
+                'rows': rows,
+                'total_pages': total_pages,
+                'page': page,
+                'per_page': per_page
             }
 
     return render_template('access/admin/admin_report.html', users=users, report_task_form=report_task_form,
@@ -184,7 +208,8 @@ def admin_report():
 def admin_db_management():
     users = get_all_users()
     conflict_search_form = ConflictSearchForm()
-    conflict_search_form.set_label_choices()
+    collection = conflict_search_form.data_collection.data
+    conflict_search_form.set_label_choices(collection)
     extract_db_form = ExtractDBForm()
     import_db_form = ImportDBForm()
     admin_label_config_form = AdminLabelConfigForm()
@@ -193,7 +218,8 @@ def admin_db_management():
     conflict_row = None
     if request.method == 'POST':
         if 'search' in request.form:
-            conflict_row = get_first_conflict_row()
+            data_collection = conflict_search_form.data_collection.data
+            conflict_row = get_first_conflict_row(data_collection)
         elif 'set_label' in request.form:
             if conflict_search_form.validate_on_submit():
                 label = conflict_search_form.label.data
@@ -202,7 +228,7 @@ def admin_db_management():
                     try:
                         row_id = ObjectId(row_id)
                         if set_admin_label_for_conflicts(row_id, label):
-                            flash('Label has been set successfully.', 'success')
+                            flash('برچسب با موفقیت افزوده شد.', 'success')
                         else:
                             flash('Failed to set label.', 'danger')
                     except bson.errors.InvalidId:
@@ -216,9 +242,9 @@ def admin_db_management():
         elif 'save_labels' in request.form:
             if admin_label_config_form.validate_on_submit():
                 labels = admin_label_config_form.labels.data
-                print('Received labels:', labels)
-                if set_admin_label_config(labels):
-                    flash('Labels have been updated successfully.', 'success')
+                data_collection = admin_label_config_form.data_collection.data
+                if set_admin_label_config(data_collection, labels):
+                    flash('برچسب ها با موفقیت بروزرسانی شدند.', 'success')
                 else:
                     flash('Failed to update labels.', 'danger')
             else:
@@ -244,7 +270,7 @@ def extract_db():
         collection_name = extract_db_form.collection_name.data
         path = f'static/db/db_{collection_name}.json'
         extract_db_collection(path, collection_name)
-        flash(f'The {collection_name} collection has been extracted successfully.', 'success')
+        flash(f' دسته بندی {collection_name}  با موفقیت استخراج شد.', 'success')
         return redirect(url_for('admin_db_management', extracted=True, collection_name=collection_name))
     else:
         flash('Failed to extract database.', 'danger')
@@ -267,21 +293,25 @@ def download_file(collection_name):
 def import_db():
     import_db_form = ImportDBForm()
     if import_db_form.validate_on_submit():
-        collection_name = import_db_form.collection_name.data
+        # collection_name = import_db_form.collection_name.data
         file = import_db_form.file.data
+        file_name_with_extension = file.filename
+        file_name = os.path.splitext(file_name_with_extension)[0]
+        print(file_name)
         try:
             data = json.load(file)
             data = convert_oid(data)  # Convert ObjectId if necessary
-            if rename_collection_if_exist(collection_name):
-                flash(f'The collection exist and renamed to {collection_name}_old!', 'warning')
-            import_db_collection(collection_name, data)
-            flash(f'The {collection_name} collection has been imported successfully into the DB .', 'success')
+            if file_name in get_db_collection_names():
+                flash(f'این مجموعه داده از قبل وجود دارد.', 'warning')
+            else:
+                import_db_collection(file_name, data)
+                flash(f'مجموعه داده {file_name} با موفقیت به دیتابیس اضافه شد.', 'success')
         except Exception as e:
-            flash(f'Failed to import data: {e}', 'danger')
+            flash(f'بارگذاری ناموفق: {e}', 'danger')
 
         return redirect(url_for('admin_db_management'))
     else:
-        flash('Failed to import database.', 'danger')
+        flash('بارگذاری ناموفق!', 'danger')
     return redirect(url_for('admin_db_management'))
 
 
@@ -289,11 +319,11 @@ def import_db():
 @role_required('user')
 @login_required
 def user():
+    collection = get_user_collection(current_user.username)
     add_label_form = AddLabelForm()
-    add_label_form.set_label_choices()
+    add_label_form.set_label_choices(collection)
     read_one_row_form = ReadOneRowDataForm()
     row = read_one_row_of_data(current_user.username)
-
     if row:
         read_one_row_form.username.data = current_user.username
         read_one_row_form.data.data = row['data']
@@ -303,7 +333,7 @@ def user():
         add_label_form.username.data = current_user.username
     else:
         read_one_row_form.data.data = "--None--"
-        flash('All rows have been labeled by this account!', 'info')
+        flash('همه داده ها توسط این کاربر برچسب گذاری شده است.', 'info')
     return render_template('access/user/user.html', read_one_row_form=read_one_row_form, add_label_form=add_label_form)
 
 
@@ -316,9 +346,9 @@ def read_one_row_data():
         username = read_one_row_form.username.data
         row = read_one_row_of_data(username)
         if row:
-            flash('Row has been retrieved successfully.', 'success')
+            flash('داده با موفقیت بازیابی شد.', 'success')
             return redirect(url_for('user'))
-    flash('Failed to extract from database.', 'danger')
+    flash('استخراج از پایگاه داده ناموفق بود.', 'danger')
     return redirect(url_for('user'))
 
 
@@ -326,16 +356,17 @@ def read_one_row_data():
 @role_required('user')
 @login_required
 def add_label():
+    collection = get_user_collection(current_user.username)
     add_label_form = AddLabelForm()
-    add_label_form.set_label_choices()
+    add_label_form.set_label_choices(collection)
     if add_label_form.validate_on_submit():
         row_id = add_label_form.row_id.data
         username = add_label_form.username.data
         label = add_label_form.label.data
         if add_label_to_data(ObjectId(row_id), label, username):
-            flash('Label has been added successfully.', 'success')
+            flash('برچسب با موفقیت اضافه شد.', 'success')
         else:
-            flash('Failed to add label.', 'danger')
+            flash('افزودن برچسب ناموفق بود.', 'danger')
     return redirect(url_for('user'))
 
 

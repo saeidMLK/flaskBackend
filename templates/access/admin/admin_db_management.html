@@ -4,17 +4,40 @@
     <h2>مدیریت پایگاه داده</h2>
 
     <form action="{{ url_for('admin_db_management') }}" method="post">
-        <h5 style="margin-top: 70px">رفع یک تناقض:</h5>
+        <h5 style="margin-top: 70px">رفع تناقض در برچسب ها:</h5>
         {{ conflict_search_form.hidden_tag() }}
-        <button type="submit" name="search" class="btn btn-primary btn-sm" style="margin-top: 10px">یافتن اولین داده متناقض</button>
+        <div class="form-group">
+            <label for="collection_name">مجموعه داده مورد نظر را انتخاب کنید:</label>
+            {{ conflict_search_form.data_collection(class="form-control") }}
+        </div>
+        <button type="submit" name="search" class="btn btn-primary btn-sm" style="margin-top: 10px">یافتن داده
+            متناقض
+        </button>
     </form>
 
     {% if conflict_row %}
-        <h3>First Conflict Row</h3>
-        <pre>{{ conflict_row }}</pre>
+        <p style="padding-top: 10px">اولین داده متناقض:</p>
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>داده</th>
+                <th>برچسب‌ها</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>{{ conflict_row['data'] }}</td>
+                <td>
+                    {% for key, value in conflict_row['label'].items() %}
+                        <strong>{{ key }}:</strong> {{ value }}{% if not loop.last %}<br>{% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            </tbody>
+        </table>
         <form action="{{ url_for('admin_db_management') }}" method="post">
             {{ conflict_search_form.hidden_tag() }}
-            <p>داده: {{ conflict_row['data'] }}</p>
+            <p>برچسب مناسب را انتخاب کنید: </p>
             <input type="hidden" name="row_id" value="{{ conflict_row['_id'] }}">
             {{ conflict_search_form.label(class="form-control") }}
             <button type="submit" name="set_label" class="btn btn-primary btn-sm" style="margin-top: 20px">افزودن برچسب
@@ -44,11 +67,11 @@
     <h5 style="margin-top: 80px">درج یک مجموعه داده</h5>
     <form action="{{ url_for('import_db') }}" method="post" enctype="multipart/form-data">
         {{ import_db_form.hidden_tag() }}
-        <div class="form-group">
-            <label for="collection_name">نام مجموعه:</label>
-            {{ import_db_form.collection_name(class="form-control") }}
-        </div>
-        <div class="form-group">
+        {#        <div class="form-group" style="padding-top:10px ">#}
+        {#            <label for="collection_name">نام مجموعه:</label>#}
+        {#            {{ import_db_form.collection_name(class="form-control") }}#}
+        {#        </div>#}
+        <div class="form-group" style="padding-top:10px ">
             <label for="file"> فایل JSON:</label>
             {{ import_db_form.file(class="form-control") }}
         </div>
@@ -60,6 +83,10 @@
     <h5 style="margin-top: 80px">اختصاص برچسب برای داده ها</h5>
     <form action="{{ url_for('admin_db_management') }}" method="post" id="optionForm" onsubmit="updateHiddenField()">
         {{ admin_label_config_form.hidden_tag() }}
+        <div class="form-group">
+            <label for="collection_name">مجموعه داده مورد نظر را انتخاب کنید:</label>
+            {{ admin_label_config_form.data_collection(class="form-control") }}
+        </div>
         {{ admin_label_config_form.labels(id='stringfield') }}  <!-- Add the hidden field here -->
         <div class="input-group" style="width: 50%">
             {{ admin_label_config_form.new_option.label(style="margin-right: 10px; padding-top: 5px") }} {{ admin_label_config_form.new_option(class="form-control", style="margin-right: 10px", size=20) }}
@@ -68,7 +95,8 @@
         <select id="dynamicSelect" name="dynamicSelect" style="width: 100%; padding: 8px; margin-top: 10px">
             <option value="" disabled selected>اینجا برچسب های مورد نظر می باشند</option>
         </select>
-        <button type="submit" name="save_labels" class="btn btn-primary btn-sm" style="margin-top: 10px; margin-bottom: 50px">
+        <button type="submit" name="save_labels" class="btn btn-primary btn-sm"
+                style="margin-top: 10px; margin-bottom: 50px">
             افزودن این برچسب ها
         </button>
     </form>

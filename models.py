@@ -35,10 +35,12 @@ def find_user_by_id(user_id):
     return User.from_document(user_data)
 
 
-def add_user(username, password, role):
+def add_user(username, password, collections, role):
     if not find_user(username):
         password_hash = generate_password_hash(password)
-        users_collection.insert_one({'username': username, 'password_hash': password_hash, 'role':role})
+        if role == 'admin':
+            collections = 'all'
+        users_collection.insert_one({'username': username, 'password_hash': password_hash, 'collections':collections, 'role':role})
         return True
     return False
 
@@ -164,8 +166,18 @@ def get_user_performance(username):
     return number_of_labels, consensus_degree
 
 
-def get_first_conflict_row():
-    for document in data_collection.find():
+def get_user_labels(username, page, per_page=10):
+    # Skip and limit for pagination
+    skip = (page - 1) * per_page
+    rows_cursor = data_collection.find({f"label.{username}": {"$exists": True}}).skip(skip).limit(per_page)
+    rows = [{"row": row.get('data'), "answer": row.get('label')} for row in rows_cursor]
+    total_rows = get_user_performance(username)[0]
+    return rows, total_rows
+
+
+def get_first_conflict_row(data_collection):
+    collection = db[data_collection]
+    for document in collection.find():
         if 'label_admin' not in document:
             labels = document.get("label", {})
             if labels:
@@ -188,13 +200,18 @@ def set_admin_label_for_conflicts(row_id, label):
     return result.modified_count == 1
 
 
-def set_admin_label_config(labels):
+def set_admin_label_config(data_collection, labels):
     # Convert the string to a Python list
     array_of_labels = json.loads(labels)
-    return ConfigDB.update_data_labels(array_of_labels)
+    return ConfigDB.update_data_labels(data_collection, array_of_labels)
 
 
-# print(set_admin_label_config(["a1"]))
-
+def get_user_collection(username):
+    user = users_collection.find_one({"username": username})
+    if user:
+        collection = user.get("collections")
+        return collection
+    else:
+        return None
 
 

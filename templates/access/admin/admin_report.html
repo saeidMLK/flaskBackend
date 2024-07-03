@@ -8,8 +8,8 @@
         <form action="{{ url_for('admin_report') }}" method="post">
             {{ report_task_form.hidden_tag() }}
             {{ report_task_form.username(class="form-control") }}
-            <button type="submit" name="task" value="labels" class="btn btn-primary btn-sm" style="margin: 20px;">دریافت تعداد برچسب ها</button>
-            <button type="submit" name="task" value="data" class="btn btn-primary btn-sm" style="margin: 20px;">نمایش برچسب ها</button>
+            <button type="submit" name="labels" class="btn btn-primary btn-sm" style="margin: 20px;">دریافت تعداد برچسب ها</button>
+            <button type="submit" name="data" class="btn btn-primary btn-sm" style="margin: 20px;">نمایش برچسب ها</button>
         </form>
     {% else %}
         <p>کاربری یافت نشد!</p>
@@ -22,7 +22,41 @@
                 <p>تعداد برچسب ها:   {{ report_data.number_of_labels }}</p>
                 <p>درجه انطباق:    {{ report_data.consensus_degree }}</p>
             {% elif report_data.type == 'data' %}
-                <p>Number of Updates: {{ report_data.number_of_updates }}</p>
+{#                <p>تعداد کل صفحات: {{ report_data.total_pages }}</p>#}
+{#                <p>صفحه فعلی: {{ report_data.page }}</p>#}
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>داده</th>
+                            <th>برچسب ها</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in report_data.rows %}
+                            <tr>
+                                <td>{{ row.row }}</td>
+                                <td>
+                                    <ul>
+                                        {% for key, value in row.answer.items() %}
+                                            <li><strong>{{ key }}:</strong> {{ value }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                                <!-- Pagination -->
+                <div class="pagination" style="display: flex; justify-content: center; align-items: center; margin-top: 20px;">
+                    {% if report_data.page > 1 %}
+                        <a href="{{ url_for('admin_report', page=report_data.page - 1, username=report_data.username) }}" class="btn btn-secondary" style="margin: 0 10px;">قبلی</a>
+                    {% endif %}
+                    <span style="margin: 0 10px;">صفحه {{ report_data.page }} از {{ report_data.total_pages }}</span>
+                    {% if report_data.page < report_data.total_pages %}
+                        <a href="{{ url_for('admin_report', page=report_data.page + 1, username=report_data.username) }}" class="btn btn-secondary" style="margin: 0 10px;">بعدی</a>
+                    {% endif %}
+                </div>
+                <!-- End Pagination -->
             {% endif %}
         </div>
     {% endif %}

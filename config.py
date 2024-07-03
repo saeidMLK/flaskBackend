@@ -1,5 +1,7 @@
 from dotenv import load_dotenv
 import os
+
+from flask import Config
 from pymongo import MongoClient
 
 # Load environment variables from .env file
@@ -10,21 +12,27 @@ class ConfigDB():
     MONGODB_URI = os.getenv('MONGODB_URI')
     MONGO_DBNAME = os.getenv('MONGO_DBNAME')
     @classmethod
-    def get_data_labels(cls):
+    def get_data_labels(cls, data_collection):
         client = MongoClient(ConfigDB.MONGODB_URI)
         db = client[ConfigDB.MONGO_DBNAME]
         config_collection = db.config
-        labels = config_collection.find_one({'key': 'labels'})
-        return labels['value']
+        result = config_collection.find_one({'collection': data_collection})
+        if result:
+            labels = result['labels']
+            return labels
 
     @classmethod
-    def update_data_labels(cls, new_labels):
+    def update_data_labels(cls, data_collection, new_labels):
         client = MongoClient(ConfigDB.MONGODB_URI)
         db = client[ConfigDB.MONGO_DBNAME]
         config_collection = db.config
-        return config_collection.update_one(
-                {"key": "labels"},
-                {"$set": {"value": new_labels}})
+        if config_collection.find_one({"collection": data_collection}):
+            return config_collection.update_one(
+                    {"collection": data_collection},
+                    {"$set": {"labels": new_labels}})
+        else:
+            return config_collection.insert_one({"collection": data_collection,
+                                                "labels": new_labels})
 
 
 class ConfigApp:

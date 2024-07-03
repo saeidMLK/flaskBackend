@@ -5,6 +5,8 @@ from wtforms.fields import SelectField
 
 import models
 from config import ConfigDB
+from models import get_db_collection_names
+
 
 class LoginForm(FlaskForm):
     username = StringField('نام کاربری', validators=[DataRequired()])
@@ -15,15 +17,15 @@ class LoginForm(FlaskForm):
 
 class SignUpForm(FlaskForm):
     username = StringField('نام کاربری', validators=[DataRequired()])
-    category = SelectField('داده', choices=models.get_category_names(), validators=[DataRequired()])
+    collections = SelectField('داده مد نظر برای برچسب زدن', choices=models.get_db_collection_names(), validators=[DataRequired()])
     password = PasswordField('کلمه عبور', validators=[DataRequired()])
     confirm_password = PasswordField('تکرار کلمه عبور', validators=[DataRequired(), EqualTo('password')])
     role = SelectField('نقش', choices=[('user', 'User'), ('admin', 'Admin')], validators=[DataRequired()])
     submit = SubmitField('ایجاد کاربر')
 
-    def set_category_choices(self):
-        choices = models.get_category_names()
-        self.category.choices = choices
+    def set_collections_choices(self):
+        choices = models.get_db_collection_names()
+        self.collections.choices = choices
 
 class RemoveUserForm(FlaskForm):
     username = SelectField('نام کاربری', validators=[DataRequired()], coerce=str)
@@ -39,52 +41,53 @@ class ExtractDBForm(FlaskForm):
         self.collection_name.choices = choices
 
 class ImportDBForm(FlaskForm):
-    collection_name = SelectField('Collection Name', choices=models.get_db_collection_names(), validators=[DataRequired()])
-    file = FileField('JSON File', validators=[DataRequired()])
-    submit = SubmitField('Import Database')
+    # collection_name = SelectField('نام مجموعه', choices=models.get_db_collection_names(), validators=[DataRequired()])
+    file = FileField('فایل JSON', validators=[DataRequired()])
+    submit = SubmitField('افزودن مجموعه داده')
 
 
 class ReadOneRowDataForm(FlaskForm):
-    row_id = StringField('Row ID', validators=[DataRequired()], render_kw={'readonly': True})
-    username = StringField('Username', validators=[DataRequired()], render_kw={'readonly': True})
-    data = StringField('Data', validators=[DataRequired()], render_kw={'readonly': True})
+    row_id = StringField('شماره سطر', validators=[DataRequired()], render_kw={'readonly': True})
+    username = StringField('نام کاربری', validators=[DataRequired()], render_kw={'readonly': True})
+    data = StringField('داده', validators=[DataRequired()], render_kw={'readonly': True})
 
 
 class AddLabelForm(FlaskForm):
-    row_id = StringField('Row ID', validators=[DataRequired()], render_kw={'readonly': True})
-    username = StringField('Username', validators=[DataRequired()], render_kw={'readonly': True})
-    label = SelectField('Choose Label:', validators=[DataRequired()])
-    submit = SubmitField('Add Label')
+    row_id = StringField('شماره سطر', validators=[DataRequired()], render_kw={'readonly': True})
+    username = StringField('نام کاربری', validators=[DataRequired()], render_kw={'readonly': True})
+    label = SelectField('برچسب مناسب را انتخاب کنید:', validators=[DataRequired()])
+    submit = SubmitField('افزودن برچسب')
 
     # update choices when we instantiate AddLabelForm to get the updated labels for it.
     # we call this function (instance.function) after each instantiation
-    def set_label_choices(self):
-        choices = ConfigDB.get_data_labels()
+    def set_label_choices(self, collectin):
+        choices = ConfigDB.get_data_labels(collectin)
         self.label.choices = choices
 
-
 class ReportTaskForm(FlaskForm):
-    username = SelectField('Username', validators=[DataRequired()], coerce=str)
+    username = SelectField('نام کاربری', validators=[DataRequired()], coerce=str)
 
 
 class ConflictSearchForm(FlaskForm):
-    search = SubmitField('Find a Conflicted Row')
-    label = SelectField('Choose Label:', validators=[DataRequired()])
-    row_id = StringField('Row ID')
-    set_label = SubmitField('Set Label')
+    data_collection = SelectField('مجموعه داده مورد نظر را انتخاب کنید:', choices=get_db_collection_names(), validators=[DataRequired()])
+    search = SubmitField('یافتن یک داده متناقض')
+    label = SelectField('انتخاب برچسب:', validators=[DataRequired()])
+    row_id = StringField('شماره سطر')
+    set_label = SubmitField('افزودن برچسب')
 
     # update choices when we instantiate AddLabelForm to get the updated labels for it.
     # we call this function (instance.function) after each instantiation
-    def set_label_choices(self):
-        choices = ConfigDB.get_data_labels()
+    def set_label_choices(self, collection):
+        choices = ConfigDB.get_data_labels(collection)
         self.label.choices = choices
 
 
 class LabelForm(FlaskForm):
-    label = StringField('Label', validators=[DataRequired()])
+    label = StringField('برچسب', validators=[DataRequired()])
+
 
 class AdminLabelConfigForm(FlaskForm):
-    labels = StringField('Labels', validators=[DataRequired()], render_kw={"type": "hidden"})
-    # submit = SubmitField('Save Labels')
-    new_option = StringField('Add a new label: ')
-    add_button = SubmitField('Add')
+    data_collection = SelectField('مجموعه داده مورد نظر را انتخاب کنید:', choices=get_db_collection_names(), validators=[DataRequired()])
+    labels = StringField('برچسب', validators=[DataRequired()], render_kw={"type": "hidden"})
+    new_option = StringField('افزودن برچسب جدید: ')
+    add_button = SubmitField('افزودن')
