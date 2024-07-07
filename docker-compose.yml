@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: datalabeling-mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_DATABASE: DataLabeling
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: adminpasswordmongo
+    volumes:
+      - ./init-mongo/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - ./init-mongo/config.json:/docker-entrypoint-initdb.d/config.json:ro
+      - ./init-mongo/data.json:/docker-entrypoint-initdb.d/data.json:ro
+      - ./init-mongo/users.json:/docker-entrypoint-initdb.d/users.json:ro
+      - datalabeling-mongodb-data:/data/db
+    ports:
+      - 27018:27017
+
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: datalabeling-mongo-express
+    restart: always
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: adminpasswordmongo
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_BASICAUTH_USERNAME: expressadmin
+      ME_CONFIG_BASICAUTH_PASSWORD: expressadminpasswordmongo
+    ports:
+      - 8082:8081
+    depends_on:
+      - datalabeling-mongodb
+
+
+  app:
+    image: data-labeling:1.0
+    ports:
+      - "4001:4001"
+    depends_on:
+      - datalabeling-mongodb
+
+
+volumes:
+  mongodb-data:

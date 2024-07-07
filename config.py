@@ -1,7 +1,6 @@
 from dotenv import load_dotenv
 import os
-
-from flask import Config
+# from flask import Config
 from pymongo import MongoClient
 
 # Load environment variables from .env file

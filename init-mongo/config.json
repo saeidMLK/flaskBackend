@@ -1,6 +1,6 @@
 [{
-  "key": "categories",
-  "value": [
+  "collection": "data",
+  "labels": [
     "cat1",
     "cat2"
   ]
