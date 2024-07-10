@@ -74,11 +74,14 @@ class ConflictSearchForm(FlaskForm):
     label = SelectField('انتخاب برچسب:', validators=[DataRequired()])
     row_id = StringField('شماره سطر')
     set_label = SubmitField('افزودن برچسب')
+    hidden_collection = HiddenField()
 
     # update choices when we instantiate AddLabelForm to get the updated labels for it.
     # we call this function (instance.function) after each instantiation
     def set_label_choices(self, collection):
         choices = ConfigDB.get_data_labels(collection)
+        print(collection)
+        print(choices)
         self.label.choices = choices
 
 

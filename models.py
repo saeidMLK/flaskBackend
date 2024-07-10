@@ -9,7 +9,7 @@ import json
 client = MongoClient(ConfigDB.MONGODB_URI)
 db = client[ConfigDB.MONGO_DBNAME]
 users_collection = db.users
-data_collection = db.data
+# data_collection = db.data
 
 class User(UserMixin):
     def __init__(self, user_data):
@@ -115,12 +115,23 @@ def rename_collection_if_exist(collection_name):
         return True
     return False
 
+
 def import_db_collection(collection_name, data):
     data = convert_oid(data)
     return db[collection_name].insert_many(data)
 
 
+def get_user_collection(username):
+    user = users_collection.find_one({"username": username})
+    if user:
+        collection = user.get("collections")
+        return collection
+    else:
+        return None
+
+
 def read_one_row_of_data(username):
+    data_collection = get_user_collection(username)
     # Iterate through each document in the collection
     for row in data_collection.find():
         # Check if the name does not exist as a key within the "label" object
@@ -131,6 +142,7 @@ def read_one_row_of_data(username):
 
 
 def add_label_to_data(row_id, label, username):
+    data_collection = get_user_collection(username)
     # Update the document with the provided row_id
     result = data_collection.update_one(
         {"_id": ObjectId(row_id)},
@@ -143,7 +155,7 @@ def add_label_to_data(row_id, label, username):
 def get_user_performance(username):
     number_of_labels = 0
     total_consensus_degree = 0
-
+    data_collection = get_user_collection(username)
     for row in data_collection.find():
         # Retrieve the label dictionary for the current row
         label_dict = row.get("label", {})
@@ -167,6 +179,7 @@ def get_user_performance(username):
 
 
 def get_user_labels(username, page, per_page=10):
+    data_collection = get_user_collection(username)
     # Skip and limit for pagination
     skip = (page - 1) * per_page
     rows_cursor = data_collection.find({f"label.{username}": {"$exists": True}}).skip(skip).limit(per_page)
@@ -192,8 +205,9 @@ def get_first_conflict_row(data_collection):
     return None
 
 
-def set_admin_label_for_conflicts(row_id, label):
-    result = data_collection.update_one(
+def set_admin_label_for_conflicts(collection_name, row_id, label):
+    collection = db[collection_name]
+    result = collection.update_one(
         {"_id": row_id},
         {"$set": {"label_admin": label}}
     )
@@ -206,12 +220,9 @@ def set_admin_label_config(data_collection, labels):
     return ConfigDB.update_data_labels(data_collection, array_of_labels)
 
 
-def get_user_collection(username):
-    user = users_collection.find_one({"username": username})
-    if user:
-        collection = user.get("collections")
-        return collection
-    else:
-        return None
+# def set_final_labels(collection_name):
+
+
+
 
 

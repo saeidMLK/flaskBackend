@@ -208,26 +208,35 @@ def admin_report():
 def admin_db_management():
     users = get_all_users()
     conflict_search_form = ConflictSearchForm()
-    collection = conflict_search_form.data_collection.data
-    conflict_search_form.set_label_choices(collection)
+    # collection = conflict_search_form.data_collection.data
+    # conflict_search_form.set_label_choices(collection)
+    # print(collection)
     extract_db_form = ExtractDBForm()
     import_db_form = ImportDBForm()
     admin_label_config_form = AdminLabelConfigForm()
     extracted = request.args.get('extracted', False)
-    collection_name = request.args.get('collection_name', '')
+    # collection_name = request.args.get('collection_name', '')
     conflict_row = None
     if request.method == 'POST':
         if 'search' in request.form:
-            data_collection = conflict_search_form.data_collection.data
-            conflict_row = get_first_conflict_row(data_collection)
+            # data_collection = conflict_search_form.data_collection.data
+            collection = conflict_search_form.data_collection.data
+            conflict_search_form.hidden_collection.data = collection  # Store collection in hidden field
+            conflict_search_form.set_label_choices(collection)  # Set label choices based on selected collection
+
+            conflict_row = get_first_conflict_row(collection)
         elif 'set_label' in request.form:
+            collection = request.form.get('hidden_collection')  # Retrieve collection from hidden field
+            conflict_search_form.data_collection.data = collection  # Repopulate form field
+            conflict_search_form.set_label_choices(collection)  # Set label choices based on selected collection
+
             if conflict_search_form.validate_on_submit():
                 label = conflict_search_form.label.data
                 row_id = request.form.get('row_id')
                 if row_id:
                     try:
                         row_id = ObjectId(row_id)
-                        if set_admin_label_for_conflicts(row_id, label):
+                        if set_admin_label_for_conflicts(collection, row_id, label):
                             flash('برچسب با موفقیت افزوده شد.', 'success')
                         else:
                             flash('Failed to set label.', 'danger')
@@ -235,7 +244,7 @@ def admin_db_management():
                         flash('Invalid row ID.', 'danger')
                 else:
                     flash('No row ID provided.', 'danger')
-                conflict_row = get_first_conflict_row()  # Retrieve the next conflict row
+                conflict_row = get_first_conflict_row(collection)  # Retrieve the next conflict row
             else:
                 flash('Form validation failed.', 'danger')
 
@@ -257,8 +266,8 @@ def admin_db_management():
                            extract_db_form=extract_db_form,
                            import_db_form=import_db_form,
                            admin_label_config_form=admin_label_config_form,
-                           extracted=extracted,
-                           collection_name=collection_name
+                           extracted=extracted
+                           # collection_name=collection_name
                            )
 
 
