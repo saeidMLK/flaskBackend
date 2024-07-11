@@ -131,9 +131,10 @@ def get_user_collection(username):
 
 
 def read_one_row_of_data(username):
-    data_collection = get_user_collection(username)
+    collection_name = get_user_collection(username)
+    collection = db[collection_name]
     # Iterate through each document in the collection
-    for row in data_collection.find():
+    for row in collection.find():
         # Check if the name does not exist as a key within the "label" object
         if username not in row.get("label", {}):
             return row
@@ -142,9 +143,10 @@ def read_one_row_of_data(username):
 
 
 def add_label_to_data(row_id, label, username):
-    data_collection = get_user_collection(username)
+    collection_name = get_user_collection(username)
+    collection = db[collection_name]
     # Update the document with the provided row_id
-    result = data_collection.update_one(
+    result = collection.update_one(
         {"_id": ObjectId(row_id)},
         {"$set": {f"label.{username}": label}}
     )
@@ -155,8 +157,9 @@ def add_label_to_data(row_id, label, username):
 def get_user_performance(username):
     number_of_labels = 0
     total_consensus_degree = 0
-    data_collection = get_user_collection(username)
-    for row in data_collection.find():
+    collection_name = get_user_collection(username)
+    collection = db[collection_name]
+    for row in collection.find():
         # Retrieve the label dictionary for the current row
         label_dict = row.get("label", {})
 
@@ -179,17 +182,18 @@ def get_user_performance(username):
 
 
 def get_user_labels(username, page, per_page=10):
-    data_collection = get_user_collection(username)
+    collection_name = get_user_collection(username)
+    collection = db[collection_name]
     # Skip and limit for pagination
     skip = (page - 1) * per_page
-    rows_cursor = data_collection.find({f"label.{username}": {"$exists": True}}).skip(skip).limit(per_page)
+    rows_cursor = collection.find({f"label.{username}": {"$exists": True}}).skip(skip).limit(per_page)
     rows = [{"row": row.get('data'), "answer": row.get('label')} for row in rows_cursor]
     total_rows = get_user_performance(username)[0]
     return rows, total_rows
 
 
-def get_first_conflict_row(data_collection):
-    collection = db[data_collection]
+def get_first_conflict_row(collection_name, threshold):
+    collection = db[collection_name]
     for document in collection.find():
         if 'label_admin' not in document:
             labels = document.get("label", {})
@@ -200,7 +204,7 @@ def get_first_conflict_row(data_collection):
                     label_counts[label] = label_counts.get(label, 0) + 1
 
                 max_label_rate = max(label_counts.values()) / total_labels
-                if max_label_rate < 0.5:
+                if max_label_rate < threshold:
                     return document
     return None
 
@@ -220,9 +224,34 @@ def set_admin_label_config(data_collection, labels):
     return ConfigDB.update_data_labels(data_collection, array_of_labels)
 
 
-# def set_final_labels(collection_name):
+def calculate_and_set_average_label(collection_name):
+    try:
+        collection = db[collection_name]
+        for document in collection.find():
+            if 'label_admin' in document:
+                average_label = document['label_admin']
+            else:
+                labels = document.get("label", {})
+                value_count = {}
+                for value in labels.values():
+                    if value in value_count:
+                        value_count[value] += 1
+                    else:
+                        value_count[value] = 1
+                if value_count:
+                    average_label = max(value_count, key=value_count.get)
+                else:
+                    average_label = None  # Or set a default value if no labels are found
+            # Update the document with the calculated average_label
+            collection.update_one(
+                {"_id": document["_id"]},
+                {"$set": {"average_label": average_label}}
+            )
+        return True
+    except Exception:
+        return False
 
-
+# calculate_and_set_average_label("data_old")
 
 
 

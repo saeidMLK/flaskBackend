@@ -80,8 +80,6 @@ class ConflictSearchForm(FlaskForm):
     # we call this function (instance.function) after each instantiation
     def set_label_choices(self, collection):
         choices = ConfigDB.get_data_labels(collection)
-        print(collection)
-        print(choices)
         self.label.choices = choices
 
 
@@ -94,3 +92,8 @@ class AdminLabelConfigForm(FlaskForm):
     labels = StringField('برچسب', validators=[DataRequired()], render_kw={"type": "hidden"})
     new_option = StringField('افزودن برچسب جدید: ')
     add_button = SubmitField('افزودن')
+
+
+class AddAverageLabelForm(FlaskForm):
+    data_collection = SelectField('مجموعه داده مورد نظر را انتخاب کنید:', choices=get_db_collection_names(), validators=[DataRequired()])
+    set_average_label = SubmitField('افزودن برچسب تجمعی')

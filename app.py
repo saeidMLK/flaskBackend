@@ -11,11 +11,12 @@ from bson.objectid import ObjectId
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask import Flask, render_template, redirect, url_for, flash, request, send_file
 from forms import LoginForm, SignUpForm, RemoveUserForm, ExtractDBForm, AddLabelForm, ReadOneRowDataForm, \
-    ReportTaskForm, ConflictSearchForm, AdminLabelConfigForm, ImportDBForm
+    ReportTaskForm, ConflictSearchForm, AdminLabelConfigForm, ImportDBForm, AddAverageLabelForm
 from models import find_user, add_user, check_password, find_user_by_id, remove_user_by_name, get_all_users, \
     extract_db_collection, read_one_row_of_data, add_label_to_data, get_user_performance, get_first_conflict_row, \
     set_admin_label_for_conflicts, set_admin_label_config, import_db_collection, convert_oid, \
-    rename_collection_if_exist, get_user_labels, get_db_collection_names, get_user_collection
+    rename_collection_if_exist, get_user_labels, get_db_collection_names, get_user_collection, \
+    calculate_and_set_average_label
 from extensions import sanitize_input, generate_captcha, clear_old_captchas  # , limiter
 
 app = Flask(__name__)
@@ -214,8 +215,9 @@ def admin_db_management():
     extract_db_form = ExtractDBForm()
     import_db_form = ImportDBForm()
     admin_label_config_form = AdminLabelConfigForm()
+    add_average_label_form = AddAverageLabelForm()
     extracted = request.args.get('extracted', False)
-    # collection_name = request.args.get('collection_name', '')
+    collection_name = request.args.get('collection_name', '')   # For downloading the collection.
     conflict_row = None
     if request.method == 'POST':
         if 'search' in request.form:
@@ -223,8 +225,8 @@ def admin_db_management():
             collection = conflict_search_form.data_collection.data
             conflict_search_form.hidden_collection.data = collection  # Store collection in hidden field
             conflict_search_form.set_label_choices(collection)  # Set label choices based on selected collection
-
-            conflict_row = get_first_conflict_row(collection)
+            threshold = float(request.form.get('threshold'))
+            conflict_row = get_first_conflict_row(collection, threshold)
         elif 'set_label' in request.form:
             collection = request.form.get('hidden_collection')  # Retrieve collection from hidden field
             conflict_search_form.data_collection.data = collection  # Repopulate form field
@@ -266,9 +268,25 @@ def admin_db_management():
                            extract_db_form=extract_db_form,
                            import_db_form=import_db_form,
                            admin_label_config_form=admin_label_config_form,
-                           extracted=extracted
-                           # collection_name=collection_name
+                           add_average_label_form=add_average_label_form,
+                           extracted=extracted,
+                           collection_name=collection_name
                            )
+
+
+@app.route('/add_average_label', methods=['POST'])
+@role_required('admin')
+def add_average_label():
+    add_average_label_form = AddAverageLabelForm()
+    if add_average_label_form.validate_on_submit():
+        collection_name = add_average_label_form.data_collection.data
+        if calculate_and_set_average_label(collection_name):
+            flash(f'برچسب تجمعی برای {collection_name} افزوده شد.', 'success')
+        else:
+            flash(f' برچسب تجمعی افزوده نشد! خطای تابع درج برچسب.', 'danger')
+    else:
+        flash(f'برچسب تجمعی افزوده نشد! خطای فرم ارسالی.', 'danger')
+    return redirect(url_for('admin_db_management'))
 
 
 @app.route('/extract_db', methods=['POST'])
