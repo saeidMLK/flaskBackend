@@ -1,10 +1,29 @@
 [{
-   "username": "saeed",
-  "password_hash": "scrypt:32768:8:1$6FgZtBN2ReQLVvPD$475b36f1193d7bdf967beb31aa28fc0387548a50fc39248bc3d25f9502e76ba25c99b0e8c953d06620b3f1edbbb93feb8739296e796bf9d64311bcafc0cda0b8",
-  "role": "admin"
+  "username": "saeed",
+  "password_hash": "scrypt:32768:8:1$Xn7pjt02kx7PBGnX$58eea5607122da6ee3a9e17875a8668b83032ab902091412e306b3e3f29fbcd796e52e8f61117717beb5830526b5efabd142c7c9bba9ba0fb479be84cbe26f52",
+  "role": "user",
+  "collections": "data"
 },
 {
   "username": "q",
   "password_hash": "scrypt:32768:8:1$B0nxjXXuLYkp9gEm$3f1eaec221078f76cee1cbeb29d46dfdd72bb694a8033f97b8fd2281fa254475652d434dabb4c8a5d8df3d448032c9676099c05893564a17c67419b61ca50f5c",
   "role": "admin"
+},
+{
+  "username": "admin",
+  "password_hash": "scrypt:32768:8:1$TXF617VlrvTDrbm4$eb7fab1939d500bee7ac56d5c77334edc442a6110f6c4440ec01537b7830233b6e1e4a841591a7b5c11676c9e9ec8ed513cbb9bf1703263b481513fa0cc63ebc",
+  "collections": "all",
+  "role": "admin"
+},
+{
+  "username": "user",
+  "password_hash": "scrypt:32768:8:1$COSymGmCsNz10fKh$79f9ba96b844dc9ae96d46a51837f388370140242852895b94e46cb2d75b9a7cdf6cb0b617139bd0311f5565afd8390e319e48f4a6922ab5739cad6dbe5913fd",
+  "collections": "data",
+  "role": "user"
+},
+{
+  "username": "ali",
+  "password_hash": "scrypt:32768:8:1$roiWTRlLWzqXVc7r$1053df58397f5ca348cd5e0bab1bbbc9c78a527c4990bd4335bd686e704f65edff66f33ab32010aea9d174da4bd7a8afa363f97418149b904aaa9d2ad1c8f2e6",
+  "collections": "data",
+  "role": "user"
 }]

@@ -3,7 +3,8 @@
 {% block content %}
     <h2 style="text-align: center">مدیریت پایگاه داده</h2>
 
-    <form action="{{ url_for('admin_db_management') }}" method="post">
+
+    <form action="{{ url_for('admin_db_management') }}" method="post" onsubmit="updateThresholdHiddenField()">
         <h5 style="margin-top: 70px">رفع تناقض در برچسب ها</h5>
         {{ conflict_search_form.hidden_tag() }}
         <div class="form-group" style="margin-right: 20px">
@@ -13,10 +14,11 @@
         <div class="form-group" style="margin-top: 10px">
             <label for="threshold" style="margin: 20px">حد آستانه تناقض برای برچسب‌ها:</label>
             <input type="range" class="form-range" id="threshold" name="threshold" min="0.1" max="1" step="0.1"
-                   value="0.5" oninput="this.nextElementSibling.value = this.value"
+                   value="{{ threshold }}" oninput="this.nextElementSibling.value = this.value"
                    style="width: 30%; margin: 15px; padding-top: 15px">
-            <output style="margin: 20px">0.5</output>
+            <output style="margin: 20px">{{ threshold }}</output>
         </div>
+        <input type="hidden" id="hiddenThreshold" name="hidden_threshold" value="{{ threshold }}">
         <button type="submit" name="search" class="btn btn-primary btn-sm" style="margin-top: 10px; margin-right: 20px">
             یافتن داده
             متناقض
@@ -34,7 +36,19 @@
                 </thead>
                 <tbody>
                 <tr>
-                    <td>{{ conflict_row['data'] }}</td>
+                    <td>
+                        {% if conflict_row['data'].items %}
+                            <!-- Handle the case where 'data' is a dictionary -->
+                            <ul>
+                                {% for key, value in conflict_row['data'].items() %}
+                                    <li><strong>{{ key }}:</strong> {{ value }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <!-- Handle the case where 'data' is a string -->
+                            <strong>{{ conflict_row['data'] }}</strong>
+                        {% endif %}
+                    </td>
                     <td>
                         {% for key, value in conflict_row['label'].items() %}
                             <strong>{{ key }}:</strong> {{ value }}{% if not loop.last %}<br>{% endif %}
@@ -48,6 +62,8 @@
                 <p>برچسب مناسب را انتخاب کنید: </p>
                 <input type="hidden" name="row_id" value="{{ conflict_row['_id'] }}">
                 {{ conflict_search_form.label(class="form-control") }}
+                <input type="hidden" name="hidden_threshold" value="{{ threshold }}">
+                <input type="hidden" name="hidden_collection" value="{{ conflict_search_form.data_collection.data }}">
                 <button type="submit" name="set_label" class="btn btn-primary btn-sm" style="margin-top: 20px">افزودن
                     برچسب
                 </button>
@@ -58,7 +74,6 @@
             {% endif %}
         {% endif %}
     </div>
-
 
     <h5 style="margin-top: 80px">افزودن برچسب تجمعی</h5>
     <form action="{{ url_for('add_average_label') }}" method="post" style="margin-right: 20px">
@@ -127,5 +142,13 @@
     </form>
 
     <script src="{{ url_for('static', filename='js/admin_db.js') }}"></script>
+    <script>
+        function updateThresholdHiddenField() {
+            var rangeInput = document.getElementById('threshold');
+            var hiddenInput = document.getElementById('hiddenThreshold');
+            hiddenInput.value = rangeInput.value;
+        }
+    </script>
+
 
 {% endblock %}

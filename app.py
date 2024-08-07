@@ -16,7 +16,7 @@ from models import find_user, add_user, check_password, find_user_by_id, remove_
     extract_db_collection, read_one_row_of_data, add_label_to_data, get_user_performance, get_first_conflict_row, \
     set_admin_label_for_conflicts, set_admin_label_config, import_db_collection, convert_oid, \
     rename_collection_if_exist, get_user_labels, get_db_collection_names, get_user_collection, \
-    calculate_and_set_average_label
+    calculate_and_set_average_label, get_recent_labels, update_label, get_label_options
 from extensions import sanitize_input, generate_captcha, clear_old_captchas  # , limiter
 
 app = Flask(__name__)
@@ -209,9 +209,6 @@ def admin_report():
 def admin_db_management():
     users = get_all_users()
     conflict_search_form = ConflictSearchForm()
-    # collection = conflict_search_form.data_collection.data
-    # conflict_search_form.set_label_choices(collection)
-    # print(collection)
     extract_db_form = ExtractDBForm()
     import_db_form = ImportDBForm()
     admin_label_config_form = AdminLabelConfigForm()
@@ -219,18 +216,20 @@ def admin_db_management():
     extracted = request.args.get('extracted', False)
     collection_name = request.args.get('collection_name', '')   # For downloading the collection.
     conflict_row = None
+    threshold = 0.5  # Default value
+
     if request.method == 'POST':
         if 'search' in request.form:
-            # data_collection = conflict_search_form.data_collection.data
             collection = conflict_search_form.data_collection.data
             conflict_search_form.hidden_collection.data = collection  # Store collection in hidden field
             conflict_search_form.set_label_choices(collection)  # Set label choices based on selected collection
-            threshold = float(request.form.get('threshold'))
+            threshold = float(request.form.get('threshold', 0.5))
             conflict_row = get_first_conflict_row(collection, threshold)
         elif 'set_label' in request.form:
             collection = request.form.get('hidden_collection')  # Retrieve collection from hidden field
             conflict_search_form.data_collection.data = collection  # Repopulate form field
             conflict_search_form.set_label_choices(collection)  # Set label choices based on selected collection
+            threshold = float(request.form.get('hidden_threshold', 0.5))  # Retrieve the threshold from the hidden field
 
             if conflict_search_form.validate_on_submit():
                 label = conflict_search_form.label.data
@@ -246,7 +245,7 @@ def admin_db_management():
                         flash('Invalid row ID.', 'danger')
                 else:
                     flash('No row ID provided.', 'danger')
-                conflict_row = get_first_conflict_row(collection)  # Retrieve the next conflict row
+                conflict_row = get_first_conflict_row(collection, threshold)  # Retrieve the next conflict row with the threshold
             else:
                 flash('Form validation failed.', 'danger')
 
@@ -270,7 +269,8 @@ def admin_db_management():
                            admin_label_config_form=admin_label_config_form,
                            add_average_label_form=add_average_label_form,
                            extracted=extracted,
-                           collection_name=collection_name
+                           collection_name=collection_name,
+                           threshold=threshold  # Pass the threshold to the template
                            )
 
 
@@ -342,6 +342,28 @@ def import_db():
     return redirect(url_for('admin_db_management'))
 
 
+# @app.route('/user', methods=['GET', 'POST'])
+# @role_required('user')
+# @login_required
+# def user():
+#     collection = get_user_collection(current_user.username)
+#     add_label_form = AddLabelForm()
+#     add_label_form.set_label_choices(collection)
+#     read_one_row_form = ReadOneRowDataForm()
+#     row = read_one_row_of_data(current_user.username)
+#     if row:
+#         read_one_row_form.username.data = current_user.username
+#         read_one_row_form.data.data = row['data']
+#         read_one_row_form.row_id.data = str(row['_id'])  # Pass the row ID to the form
+#         # Populate the AddLabelForm with the same data
+#         add_label_form.row_id.data = str(row['_id'])
+#         add_label_form.username.data = current_user.username
+#     else:
+#         read_one_row_form.data.data = "--None--"
+#         flash('همه داده ها توسط این کاربر برچسب گذاری شده است.', 'info')
+#     return render_template('access/user/user.html', read_one_row_form=read_one_row_form, add_label_form=add_label_form)
+
+
 @app.route('/user', methods=['GET', 'POST'])
 @role_required('user')
 @login_required
@@ -355,13 +377,31 @@ def user():
         read_one_row_form.username.data = current_user.username
         read_one_row_form.data.data = row['data']
         read_one_row_form.row_id.data = str(row['_id'])  # Pass the row ID to the form
-        # Populate the AddLabelForm with the same data
         add_label_form.row_id.data = str(row['_id'])
         add_label_form.username.data = current_user.username
     else:
         read_one_row_form.data.data = "--None--"
         flash('همه داده ها توسط این کاربر برچسب گذاری شده است.', 'info')
-    return render_template('access/user/user.html', read_one_row_form=read_one_row_form, add_label_form=add_label_form)
+
+    recent_labels = get_recent_labels(current_user.username)
+    label_options = get_label_options(collection)
+
+    return render_template('access/user/user.html', read_one_row_form=read_one_row_form, add_label_form=add_label_form,
+                           recent_labels=recent_labels, label_options=label_options, form=add_label_form)
+
+
+@app.route('/edit_label', methods=['POST'])
+@role_required('user')
+@login_required
+def edit_label():
+    row_id = request.form['row_id']
+    new_label_value = request.form['label_value']
+    username = current_user.username
+    if update_label(ObjectId(row_id), username, new_label_value):
+        flash('برچسب با موفقیت ویرایش شد.', 'success')
+    else:
+        flash('ویرایش برچسب ناموفق بود.', 'danger')
+    return redirect(url_for('user'))
 
 
 @app.route('/read_one_row_data', methods=['POST'])

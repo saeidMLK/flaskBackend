@@ -64,6 +64,7 @@ class AddLabelForm(FlaskForm):
         choices = ConfigDB.get_data_labels(collectin)
         self.label.choices = choices
 
+
 class ReportTaskForm(FlaskForm):
     username = SelectField('نام کاربری', validators=[DataRequired()], coerce=str)
 

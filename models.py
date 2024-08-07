@@ -73,7 +73,7 @@ def extract_db_collection(path, collection_name, chunk_size=1000):
     Extracts the data from the specified MongoDB collection and writes it to a JSON file in chunks.
     chunk_size (int): The number of documents to process in each chunk. Default is 1000.
     """
-    with open(path, 'w') as file:
+    with open(path, 'w',  encoding='utf-8') as file:
         file.write('[')  # Start the JSON array
         cursor = db[collection_name].find()
         first = True
@@ -90,7 +90,7 @@ def extract_db_collection(path, collection_name, chunk_size=1000):
                 file.write(', ')
             else:
                 first = False
-            file.write(dumps(chunk)[1:-1])  # Remove the surrounding square brackets
+            file.write(dumps(chunk, ensure_ascii=False)[1:-1])  # Remove the surrounding square brackets
         file.write(']')  # End the JSON array
 
 
@@ -254,4 +254,26 @@ def calculate_and_set_average_label(collection_name):
 # calculate_and_set_average_label("data_old")
 
 
+def get_recent_labels(username, limit=10):
+    collection_name = get_user_collection(username)
+    collection = db[collection_name]
+    rows = collection.find({f"label.{username}": {"$exists": True}}, {'data': 1, 'label': 1}).sort('_id', -1).limit(limit)
+    recent_labels = []
+    for row in rows:
+        recent_labels.append({'id': str(row['_id']), 'data': row.get('data', ''), 'labels': row.get('label', {})})
+    return recent_labels
+
+
+def update_label(row_id, username, new_label_value):
+    collection_name = get_user_collection(username)
+    collection = db[collection_name]
+    result = collection.update_one(
+        {'_id': ObjectId(row_id)},
+        {'$set': {f'label.{username}': new_label_value}}
+    )
+    return result.modified_count > 0
+
+
+def get_label_options(collection_name):
+    return ConfigDB.get_data_labels(collection_name)
 
