@@ -79,6 +79,7 @@ def login():
 # @limiter.limit("1 per minute")
 def sign_up():
     form = SignUpForm()  # Create an instance of the sign-up form
+    form.set_collections_choices()  # Ensure collections choices are set before form validation
     if form.validate_on_submit():
         # Process the form data (e.g., save user to database)
         sanitized_username = sanitize_input(form.username.data)
