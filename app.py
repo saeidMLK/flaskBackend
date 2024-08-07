@@ -207,6 +207,8 @@ def admin_report():
 @app.route('/admin_db_management', methods=['GET', 'POST'])
 @role_required('admin')
 def admin_db_management():
+    # Fetch the latest collection names
+    collection_names = get_db_collection_names()
     users = get_all_users()
     conflict_search_form = ConflictSearchForm()
     extract_db_form = ExtractDBForm()
@@ -217,6 +219,11 @@ def admin_db_management():
     collection_name = request.args.get('collection_name', '')   # For downloading the collection.
     conflict_row = None
     threshold = 0.5  # Default value
+    # Set choices for forms that need collection names
+    conflict_search_form.data_collection.choices = [(name, name) for name in collection_names]
+    extract_db_form.collection_name.choices = [(name, name) for name in collection_names]
+    admin_label_config_form.data_collection.choices = [(name, name) for name in collection_names]
+    add_average_label_form.data_collection.choices = [(name, name) for name in collection_names]
 
     if request.method == 'POST':
         if 'search' in request.form:
