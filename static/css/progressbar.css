@@ -1,0 +1,116 @@
+@import url("https://fonts.googleapis.com/css?family=Duru+Sans|Architects+Daughter");
+* {
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+.content {
+  overflow: hidden;
+  display: block;
+  width: 900px;
+  margin: 0 auto;
+  padding-bottom: 100px;
+}
+
+section {
+  width: 90%;
+  display: inline-flex;
+  flex-direction: column;
+  margin: 0 auto;
+}
+section:last-child {
+  margin-right: 0;
+}
+
+/*
+ * GRADIENT BAR LINE STYLING
+ */
+.health,
+.progress {
+  height: 15px;
+  width: 100%;
+  margin-bottom: 10px;
+  padding-top: 1px;
+  border-radius: 7px;
+  background-color: rgba(72, 141, 117, 0.368627451);
+  border-bottom: 1px solid #1f1f21;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3), 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+.health .progress-bar,
+.progress .progress-bar {
+  display: block;
+  overflow: hidden;
+  position: relative;
+  height: 100%;
+  margin-left: 1px;
+  border-radius: 7px;
+  min-width: 13px;
+}
+.health .progress-bar:after,
+.progress .progress-bar:after {
+  display: block;
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.2);
+  width: 6px;
+  height: 6px;
+  top: 4px;
+  right: 4px;
+  border-radius: 3px;
+  box-shadow: inset 0 2px 2px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+.health .shade {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.warm {
+  background: rgba(77, 54, 159, 0.85);
+  background: linear-gradient(to right, rgba(77, 54, 159, 0.85) 30%, rgb(1, 220, 249) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -3px 4px rgba(59, 41, 121, 0.4);
+}
+
+.cool {
+  background: #67cecd;
+  background: linear-gradient(to right, #67cecd 30%, #eaef91 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -3px 4px rgba(142, 218, 218, 0.4);
+}
+
+/*
+ * END GRADIENT BAR STYLING
+ */
+b {
+  font-weight: 400;
+  text-overflow: ellipsis;
+  display: block;
+  white-space: nowrap;
+  padding: 0 10px 6px 10px;
+  font-size: 0.8rem;
+  line-height: 0.8;
+}
+b:before, b:after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 1px;
+  height: 100%;
+  background-color: #5c5c6c;
+  top: 0;
+}
+b:before {
+  left: 0;
+}
+b:after {
+  right: 0;
+}
+
+.content > p {
+  text-align: center;
+}
+
+/*# sourceMappingURL=progressbar.css.map */
