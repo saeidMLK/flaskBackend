@@ -30,7 +30,7 @@
         .container {
             background-color: rgba(255, 255, 255, 0.40); /* Optional: makes the content area slightly transparent */
             padding: 40px 80px 40px 80px;
-            border-radius: 10px;
+            border-radius:  10px 0 0 10px;
         }
     </style>
     <title>{% block title %}سیستم برچسب زنی{% endblock %}</title>
@@ -38,66 +38,67 @@
 
 <body>
 {#    <header>#}
-        <nav class="navbar navbar-expand-lg navbar-dark"
-             style="background-color:var(--primary-header-color); color: white; position: sticky; top: -45px; z-index: 1100;">
-            <div class="container-fluid">
-                <div>
-                    <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('home') }}">خانه</a>
-                        </li>
-                        {% block navitem_right %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin') }}">مدیر</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('user') }}">کاربر</a>
-                            </li>
-                        {% endblock %}
+<nav class="navbar navbar-expand-lg navbar-dark"
+     style="background-color:var(--primary-header-color); color: white; position: sticky; top: -45px; z-index: 1100;">
+    <div class="container-fluid">
+        <div>
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('home') }}">خانه</a>
+                </li>
+                {% block navitem_right %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin') }}">مدیر</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user') }}">کاربر</a>
+                    </li>
+                {% endblock %}
 
-                    </ul>
-                </div>
-                <div>
-                    <ul class="navbar-nav">
-                        {% block navitem_left %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('login') }}">ورود</a>
-                            </li>
-                        {% endblock %}
-                    </ul>
-                </div>
-            </div>
-        </nav>
+            </ul>
+        </div>
+        <div>
+            <ul class="navbar-nav">
+                {% block navitem_left %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}">ورود</a>
+                    </li>
+                {% endblock %}
+            </ul>
+        </div>
+    </div>
+</nav>
 
-        {% block navbar_sub %} {% endblock %}
+{% block navbar_sub %} {% endblock %}
 
 {#    </header>#}
 
-    <div style="display: flex;">
-        <div style="flex: 0 0 20%; background-color:var(--sidebar-color);">
-            {% block sidebar %} {% endblock %}
+<div style="display: flex; justify-content: center">
+    {% block sidebar %}
+        <div style="flex: 0 0 0; background-color: rgba(255,255,255,0);">
         </div>
-        <div> {#style="flex: 0 0 80%;"#}
-            <div class="container">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        <div class="alert-container">
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ category }}">{{ message }}</div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                {% endwith %}
-                {% block content %} {% endblock %}
-            </div>
+    {% endblock %}
+    <div> {#style="flex: 0 0 80%;"#}
+        <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="alert-container">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            {% block content %} {% endblock %}
         </div>
     </div>
+</div>
 
-    {% block scripts %}
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
-                integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
-                crossorigin="anonymous"></script>
-        <script src="{{ url_for('static', filename='js/base.js') }}"></script>
-    {% endblock %}
+{% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+            crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+{% endblock %}
 </body>
 </html>

@@ -1,7 +1,8 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, FileField, HiddenField, FormField, FieldList
+from wtforms import StringField, PasswordField, SubmitField, FileField, HiddenField, RadioField
 from wtforms.validators import DataRequired, Email, EqualTo, InputRequired
 from wtforms.fields import SelectField
+from wtforms.widgets import ListWidget, CheckboxInput
 
 import models
 from config import ConfigDB
@@ -17,7 +18,6 @@ class LoginForm(FlaskForm):
 
 class SignUpForm(FlaskForm):
     username = StringField('نام کاربری', validators=[DataRequired()])
-    collections = SelectField('داده مد نظر برای برچسب زدن', choices=models.get_db_collection_names(), validators=[DataRequired()])
     password = PasswordField('کلمه عبور', validators=[DataRequired()])
     confirm_password = PasswordField('تکرار کلمه عبور', validators=[DataRequired(), EqualTo('password')])
     role = SelectField('نقش', choices=[('user', 'User'), ('admin', 'Admin')], validators=[DataRequired()])
@@ -25,7 +25,8 @@ class SignUpForm(FlaskForm):
 
     def set_collections_choices(self):
         choices = models.get_db_collection_names()
-        self.collections.choices = choices
+        return choices
+
 
 class RemoveUserForm(FlaskForm):
     username = SelectField('نام کاربری', validators=[DataRequired()], coerce=str)
@@ -33,11 +34,11 @@ class RemoveUserForm(FlaskForm):
 
 
 class ExtractDBForm(FlaskForm):
-    collection_name = SelectField('نام دسته بندی', choices=models.get_db_collection_names(), validators=[DataRequired()])
+    collection_name = SelectField('نام دسته بندی', choices=models.get_db_collection_names(1), validators=[DataRequired()])
     submit = SubmitField('استخراج پایگاه داده')
 
     def set_collections_choices(self):
-        choices = models.get_db_collection_names()
+        choices = models.get_db_collection_names(1)
         self.collection_name.choices = choices
 
 class ImportDBForm(FlaskForm):
@@ -50,19 +51,18 @@ class ReadOneRowDataForm(FlaskForm):
     row_id = StringField('شماره سطر', validators=[DataRequired()], render_kw={'readonly': True})
     username = StringField('نام کاربری', validators=[DataRequired()], render_kw={'readonly': True})
     data = StringField('داده', validators=[DataRequired()], render_kw={'readonly': True})
+    collection = StringField('مجموعه داده مد نظر را انتخاب کنید:', validators=[DataRequired()])
 
 
 class AddLabelForm(FlaskForm):
     row_id = StringField('شماره سطر', validators=[DataRequired()], render_kw={'readonly': True})
     username = StringField('نام کاربری', validators=[DataRequired()], render_kw={'readonly': True})
-    label = SelectField('برچسب مناسب را انتخاب کنید:', validators=[DataRequired()])
+    label = RadioField('برچسب مناسب را انتخاب کنید:', validators=[DataRequired()], choices=[])
     submit = SubmitField('افزودن برچسب')
 
-    # update choices when we instantiate AddLabelForm to get the updated labels for it.
-    # we call this function (instance.function) after each instantiation
-    def set_label_choices(self, collectin):
-        choices = ConfigDB.get_data_labels(collectin)
-        self.label.choices = choices
+    def set_label_choices(self, collection):
+        choices = ConfigDB.get_data_labels(collection)
+        self.label.choices = [choice for choice in choices]
 
 
 class ReportTaskForm(FlaskForm):

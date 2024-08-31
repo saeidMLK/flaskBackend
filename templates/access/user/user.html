@@ -1,27 +1,38 @@
 {% extends 'main/base.html' %}
 {% block title %} صفحه کاربر {% endblock %}
-{% block navitem_right %}
-
-{% endblock %}
+{% block navitem_right %}{% endblock %}
 {% block navitem_left %}
     <li class="nav-item">
         <a class="nav-link" href="{{ url_for('logout') }}">خروج</a>
     </li>
 {% endblock %}
 
+{% block sidebar %}{% endblock %}
+
 {% block content %}
+
     <h2 style="text-align: center">برچسب گذاری</h2>
 
-    <h5 style="margin-top: 60px">افزودن برچسب</h5>
-
-    <form action="{{ url_for('read_one_row_data') }}" method="post" style="margin-top: 30px; margin-right: 20px">
+    <form action="{{ url_for('user') }}" method="post" id="read-one-row-form"
+          style="margin-top: 30px; margin-right: 20px">
         {{ read_one_row_form.hidden_tag() }}
         {{ read_one_row_form.row_id(class="form-control", type="hidden") }}
         {{ read_one_row_form.username(class="form-control", type="hidden") }}
+        {{ read_one_row_form.collection.label(style="padding:30px 0 30px 0") }}
+        {{ read_one_row_form.collection(id="selected-collection", class="form-control", type="hidden") }}
+        <div id="collections-buttons" class="btn-group-toggle" data-toggle="buttons" style="padding-bottom: 80px">
+            {% for value in user_collections %}
+                <button type="button" class="btn btn-success {% if value == selected_collection %}active{% endif %}"
+                        data-value="{{ value }}">
+                    {{ value }}
+                </button>
+            {% endfor %}
+        </div>
+
         <div class="form-group">
-            <strong>{{ read_one_row_form.data.label }}:</strong>
+            {{ read_one_row_form.data.label(style="padding-bottom:10px") }}:
             {% if read_one_row_form.data.data is string %}
-                {{ read_one_row_form.data(class="form-control", readonly=True) }}
+                {{ read_one_row_form.data(class="form-control bg-transparent", style="border: 2px solid #ced4da;", readonly=True) }}
             {% elif read_one_row_form.data.data is mapping %}
                 <table class="table table-bordered">
                     <thead>
@@ -43,18 +54,35 @@
                 -
             {% endif %}
         </div>
+
+        <!-- Hidden submit button to be triggered by JavaScript -->
+        <input type="submit" style="display: none;">
     </form>
 
     <form action="{{ url_for('add_label') }}" method="post" style="margin-top: 20px; margin-right: 20px">
         {{ add_label_form.hidden_tag() }}
         {{ add_label_form.row_id(class="form-control", type="hidden") }}
         {{ add_label_form.username(class="form-control", type="hidden") }}
+        <input type="hidden" name="selected_collection" value="{{ selected_collection }}">
+
+        {#        <div class="form-group">#}
+        {#            {{ add_label_form.label.label }}#}
+        {#            {{ add_label_form.label(class="form-control") }}#}
+        {#        </div>#}
         <div class="form-group">
             {{ add_label_form.label.label }}
-            {{ add_label_form.label(class="form-control") }}
+            <div class="custom-control custom-radio">
+                {% for option in add_label_form.label %}
+                    <div class="custom-control custom-radio" style="padding: 5px">
+                        {{ option(tag='input', class="custom-control-input", id=option.id) }}
+                        <label class="custom-control-label" for="{{ option.id }}">{{ option.label.text }}</label>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
+
         <div class="form-group">
-            {{ add_label_form.submit(class="btn btn-primary btn-sm", style="margin-top: 10px") }}
+            {{ add_label_form.submit(class="btn btn-danger", style="margin-top: 10px") }}
         </div>
     </form>
 
@@ -100,16 +128,20 @@
                             <form action="{{ url_for('edit_label') }}" method="post">
                                 {{ form.csrf_token }}
                                 <input type="hidden" name="row_id" value="{{ label.id }}">
+                                <input type="hidden" name="selected_collection" value="{{ selected_collection }}">
                                 <select name="label_value" class="form-control"
                                         style="display: inline-block; width: auto;">
                                     {% for option in label_options %}
                                         <option value="{{ option }}"
-                                                {% if label.labels[current_user.username] == option %}selected{% endif %}>{{ option }}</option>
+                                                {% if label.labels[current_user.username] == option %}selected{% endif %}>
+                                            {{ option }}
+                                        </option>
                                     {% endfor %}
                                 </select>
                                 <button type="submit" class="btn btn-sm btn-primary" style="margin-top: 5px">ویرایش
                                 </button>
                             </form>
+
                         </td>
                     </tr>
                 {% endfor %}
@@ -119,4 +151,30 @@
 
     {% endif %}
 
+
+
+    <!-- JavaScript to handle button click, toggle active state, and submit the form -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const buttons = document.querySelectorAll('#collections-buttons button');
+            const form = document.getElementById('read-one-row-form');
+            const selectedCollectionInput = document.getElementById('selected-collection');
+
+            buttons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    // Set the hidden input value
+                    selectedCollectionInput.value = button.getAttribute('data-value');
+
+                    // Remove active class from all buttons
+                    buttons.forEach(btn => btn.classList.remove('active'));
+
+                    // Add active class to the clicked button
+                    button.classList.add('active');
+
+                    // Submit the form
+                    form.submit();
+                });
+            });
+        });
+    </script>
 {% endblock %}

@@ -3143,13 +3143,13 @@ textarea.form-control-lg {
 
 .btn-warning {
     color: #000;
-    background-color: #ffc107;
+    background-color: rgba(255, 193, 7, 0.94);
     border-color: #ffc107
 }
 
 .btn-warning:hover {
     color: #000;
-    background-color: #ffca2c;
+    background-color: rgba(229, 174, 13, 0.13);
     border-color: #ffc720
 }
 

@@ -2,32 +2,36 @@
 
 
 {% block sidebar %}
-    <nav class="navbar navbar-expand-lg navbar-dark p-0"
-         style="background-color: var(--sidebar-color);margin-top: 10px; position: sticky; top: 25px; z-index: 1000;">
-        <div class="container-fluid d-flex flex-column justify-content-start align-items-stretch p-0">
-            <ul class="navbar-nav flex-column w-100" style="padding-inline-start: 0;">
-                <li class="nav-item w-100">
-                    <a class="nav-link nav-link2 w-100 text-center" href="{{ url_for('admin_report') }}#user_report"
-                       style="border: 1px solid #15482e; padding: 10px; margin-bottom: 5px;">
-                        گزارش عملکرد فرد
-                    </a>
-                </li>
-                <li class="nav-item w-100">
-                    <a class="nav-link nav-link2 w-100 text-center" href="{{ url_for('admin_report') }}#user_labels"
-                       style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
-                        نمایش برچسب های فرد
-                    </a>
-                </li>
-                <li class="nav-item w-100">
-                    <a class="nav-link nav-link2 w-100 text-center" href="{{ url_for('admin_report') }}#users_report"
-                       style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
-                        گزارش کلی همه کاربران
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </nav>
+    <div style="flex: 0 0 20%; background-color:var(--sidebar-color); border-radius: 0 10px 10px 0">
 
+        <nav class="navbar navbar-expand-lg navbar-dark p-0"
+             style="background-color: var(--sidebar-color);margin-top: 10px; position: sticky; top: 25px; z-index: 1000;">
+            <div class="container-fluid d-flex flex-column justify-content-start align-items-stretch p-0">
+                <ul class="navbar-nav flex-column w-100" style="padding-inline-start: 0;">
+                    <li class="nav-item w-100">
+                        <a class="nav-link nav-link2 w-100 text-center" href="{{ url_for('admin_report') }}#user_report"
+                           style="border: 1px solid #15482e; padding: 10px; margin-bottom: 5px;">
+                            گزارش عملکرد فرد
+                        </a>
+                    </li>
+                    <li class="nav-item w-100">
+                        <a class="nav-link nav-link2 w-100 text-center" href="{{ url_for('admin_report') }}#user_labels"
+                           style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
+                            نمایش برچسب های فرد
+                        </a>
+                    </li>
+                    <li class="nav-item w-100">
+                        <a class="nav-link nav-link2 w-100 text-center"
+                           href="{{ url_for('admin_report') }}#users_report"
+                           style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
+                            گزارش کلی همه کاربران
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+    </div>
     <style>
         .nav-link2:hover {
             background-color: rgba(23, 68, 42, 0.5); /* Light transparent white on hover */
@@ -168,7 +172,7 @@
                               </span>
                             </div>
                             <b style=" width: 20%">{{ data.label_percentage }} %</b>
-                        <div>
+                            <div>
                     </section>
                 {% endfor %}
             {% endif %}

@@ -40,7 +40,7 @@ def add_user(username, password, collections, role):
         password_hash = generate_password_hash(password)
         if role == 'admin':
             collections = 'all'
-        users_collection.insert_one({'username': username, 'password_hash': password_hash, 'collections':collections, 'role':role})
+        users_collection.insert_one({'username': username, 'password_hash': password_hash, 'collections': collections, 'role': role})
         return True
     return False
 
@@ -63,10 +63,15 @@ def check_password(user, password):
     return check_password_hash(user.password_hash, password)
 
 
-def get_db_collection_names():
+def get_db_collection_names(sys_collections_included=0):
     collections = db.list_collection_names()
-    return collections
-
+    if sys_collections_included:
+        return collections
+    else:
+        collections = db.list_collection_names()
+        items_to_remove = {'users', 'config'}
+        filtered_list = list(set(collections) - items_to_remove)
+        return filtered_list
 
 def extract_db_collection(path, collection_name, chunk_size=1000):
     """
@@ -130,8 +135,8 @@ def get_user_collection(username):
         return None
 
 
-def read_one_row_of_data(username):
-    collection_name = get_user_collection(username)
+def read_one_row_of_data(username, collection_name):
+    # collection_name = get_user_collection(username)
     collection = db[collection_name]
     # Iterate through each document in the collection
     for row in collection.find():
@@ -142,8 +147,8 @@ def read_one_row_of_data(username):
     return None
 
 
-def add_label_to_data(row_id, label, username):
-    collection_name = get_user_collection(username)
+def add_label_to_data(row_id, label, username, collection_name):
+    # collection_name = get_user_collection(username)
     collection = db[collection_name]
     # Update the document with the provided row_id
     result = collection.update_one(
@@ -258,8 +263,8 @@ def calculate_and_set_average_label(collection_name):
 # calculate_and_set_average_label("data_old")
 
 
-def get_recent_labels(username, limit=10):
-    collection_name = get_user_collection(username)
+def get_recent_labels(username, collection_name, limit=10):
+    # collections = get_user_collection(username)
     collection = db[collection_name]
     rows = collection.find({f"label.{username}": {"$exists": True}}, {'data': 1, 'label': 1}).sort('_id', -1).limit(limit)
     recent_labels = []
@@ -268,8 +273,8 @@ def get_recent_labels(username, limit=10):
     return recent_labels
 
 
-def update_label(row_id, username, new_label_value):
-    collection_name = get_user_collection(username)
+def update_label(row_id, username, new_label_value, collection_name):
+    # collection_name = get_user_collection(username)
     collection = db[collection_name]
     result = collection.update_one(
         {'_id': ObjectId(row_id)},

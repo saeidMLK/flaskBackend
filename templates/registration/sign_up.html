@@ -6,6 +6,7 @@
         <a class="nav-link" href="{{ url_for('admin_user_management') }}">بازگشت</a>
     </li>
 {% endblock %}
+
 {% block content %}
     <div class="halves">
         <div class="half_right input-box">
@@ -15,10 +16,6 @@
                 <div class="mb-3">
                     {{ form.username.label(class="form-label") }}
                     {{ form.username(class="form-control") }}
-                </div>
-                <div class="mb-3">
-                    {{ form.collections.label(class="form-label") }}
-                    {{ form.collections(class="form-control") }}
                 </div>
                 <div class="mb-3">
                     {{ form.password.label(class="form-label") }}
@@ -32,7 +29,25 @@
                     {{ form.role.label(class="form-label") }}
                     {{ form.role(class="form-select") }}
                 </div>
-                {#        <p>Have an account? Login <a href="{{ url_for('login') }}">Here</a>!</p>#}
+
+                <!-- Hidden input to store selected collections -->
+                <input type="hidden" id="selected-collections" name="collections" value="">
+
+                <!-- Collection buttons -->
+                <div id="collections-buttons-div" {% if form.role.data != 'admin' %} style="display: block;" {% else %}
+                     style="display: none;" {% endif %}>
+                    <div class="mb-3" style="padding-top: 20px">
+                        <label for="collections-buttons" class="form-label">داده های مد نظر برای برچسب زدن:</label>
+                    </div>
+                    <div id="collections-buttons" class="btn-group-toggle" data-toggle="buttons"
+                         style="padding-bottom: 20px">
+                        {% for value in collections_choices %}
+                            <button type="button" class="btn btn-warning" data-value="{{ value }}">
+                                {{ value }}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
                 {{ form.submit(class="btn btn-success") }}
             </form>
         </div>
@@ -41,6 +56,51 @@
         </div>
     </div>
 
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const collectionButtons = document.querySelectorAll('#collections-buttons button');
+            const selectedCollectionsInput = document.getElementById('selected-collections');
+            let selectedValues = [];
+
+            collectionButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const value = this.getAttribute('data-value');  // Get the value from data attribute
+
+                    {#console.log(`Button clicked: Value = ${value}`);#}
+
+                    // Toggle the active class for the clicked button only
+                    if (this.classList.contains('btn-active')) {
+                        this.classList.remove('btn-active');  // If already active, deactivate it
+                        selectedValues = selectedValues.filter(item => item !== value);  // Remove from the array
+                    } else {
+                        this.classList.add('btn-active');  // Otherwise, activate it
+                        selectedValues.push(value);  // Add to the array
+                    }
+
+                    // Update the hidden input with the selected values (as a comma-separated string)
+                    selectedCollectionsInput.value = selectedValues.join(',');
+
+                    // Remove focus from the button after it's clicked
+                    this.blur();
+                });
+            });
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const roleSelect = document.querySelector('select[name="role"]');  // Assuming the role select input
+            const collectionButtonsDiv = document.getElementById('collections-buttons-div');
+
+            roleSelect.addEventListener('change', function () {
+                if (this.value === 'admin') {
+                    collectionButtonsDiv.style.display = 'none';  // Hide if role is admin
+                } else {
+                    collectionButtonsDiv.style.display = 'block';  // Show for other roles
+                }
+            });
+        });
+    </script>
+
 {% endblock %}
-
-

@@ -79,16 +79,22 @@ def login():
 # @limiter.limit("1 per minute")
 def sign_up():
     form = SignUpForm()  # Create an instance of the sign-up form
-    form.set_collections_choices()  # Ensure collections choices are set before form validation
+    collections_choices = form.set_collections_choices()  # Ensure collections choices are set before form validation
     if form.validate_on_submit():
         # Process the form data (e.g., save user to database)
         sanitized_username = sanitize_input(form.username.data)
-        if add_user(sanitized_username, form.password.data,form.collections.data, form.role.data):
+        # Get the selected collections from the hidden input
+        selected_collections = request.form.get('collections', '')  # Comma-separated string
+        collections_list = selected_collections.split(',') if selected_collections else []
+        print(collections_list)
+        if add_user(sanitized_username, form.password.data, collections_list, form.role.data):
             flash('ایجاد کاربر جدید با موفقیت انجام شد.', 'success')
         else:
             flash('ناموفق', 'danger')
         return redirect(url_for('admin_user_management'))
-    return render_template('registration/sign_up.html', form=form)
+    # else:
+        # flash('Form validation failed. Please try again.', 'danger')
+    return render_template('registration/sign_up.html', form=form, collections_choices=collections_choices)
 
 
 @app.route('/logout')
@@ -221,7 +227,8 @@ def admin_report():
 @role_required('admin')
 def admin_db_management():
     # Fetch the latest collection names
-    collection_names = get_db_collection_names()
+    collection_names_0 = get_db_collection_names(sys_collections_included=0)
+    collection_names_1 = get_db_collection_names(sys_collections_included=1)
     users = get_all_users()
     conflict_search_form = ConflictSearchForm()
     extract_db_form = ExtractDBForm()
@@ -233,10 +240,10 @@ def admin_db_management():
     conflict_row = None
     threshold = 0.5  # Default value
     # Set choices for forms that need collection names
-    conflict_search_form.data_collection.choices = [(name, name) for name in collection_names]
-    extract_db_form.collection_name.choices = [(name, name) for name in collection_names]
-    admin_label_config_form.data_collection.choices = [(name, name) for name in collection_names]
-    add_average_label_form.data_collection.choices = [(name, name) for name in collection_names]
+    conflict_search_form.data_collection.choices = [(name, name) for name in collection_names_0]
+    extract_db_form.collection_name.choices = [(name, name) for name in collection_names_1]
+    admin_label_config_form.data_collection.choices = [(name, name) for name in collection_names_0]
+    add_average_label_form.data_collection.choices = [(name, name) for name in collection_names_0]
 
     if request.method == 'POST':
         if 'search' in request.form:
@@ -348,7 +355,7 @@ def import_db():
         try:
             data = json.load(file)
             data = convert_oid(data)  # Convert ObjectId if necessary
-            if file_name in get_db_collection_names():
+            if file_name in get_db_collection_names(sys_collections_included=1):
                 flash(f'این مجموعه داده از قبل وجود دارد.', 'warning')
             else:
                 import_db_collection(file_name, data)
@@ -388,11 +395,23 @@ def import_db():
 @role_required('user')
 @login_required
 def user():
-    collection = get_user_collection(current_user.username)
+    collections = get_user_collection(current_user.username)
     add_label_form = AddLabelForm()
-    add_label_form.set_label_choices(collection)
     read_one_row_form = ReadOneRowDataForm()
-    row = read_one_row_of_data(current_user.username)
+
+    if request.method == 'POST':
+        # This handles the form submission from the collection buttons
+        selected_collection = request.form.get('collection', collections[0])
+    else:
+        # This handles the redirect from the edit_label route or GET request
+        selected_collection = request.args.get('selected_collection', collections[0])
+
+    # Set the selected collection in the form
+    read_one_row_form.collection.data = selected_collection
+
+    add_label_form.set_label_choices(selected_collection)
+    row = read_one_row_of_data(current_user.username, selected_collection)
+
     if row:
         read_one_row_form.username.data = current_user.username
         read_one_row_form.data.data = row['data']
@@ -403,11 +422,17 @@ def user():
         read_one_row_form.data.data = "--None--"
         flash('همه داده ها توسط این کاربر برچسب گذاری شده است.', 'info')
 
-    recent_labels = get_recent_labels(current_user.username)
-    label_options = get_label_options(collection)
+    recent_labels = get_recent_labels(current_user.username, selected_collection)
+    label_options = get_label_options(selected_collection)
 
-    return render_template('access/user/user.html', read_one_row_form=read_one_row_form, add_label_form=add_label_form,
-                           recent_labels=recent_labels, label_options=label_options, form=add_label_form)
+    return render_template('access/user/user.html',
+                           read_one_row_form=read_one_row_form,
+                           add_label_form=add_label_form,
+                           recent_labels=recent_labels,
+                           label_options=label_options,
+                           form=add_label_form,
+                           user_collections=collections,
+                           selected_collection=selected_collection)
 
 
 @app.route('/edit_label', methods=['POST'])
@@ -416,12 +441,17 @@ def user():
 def edit_label():
     row_id = request.form['row_id']
     new_label_value = request.form['label_value']
+    selected_collection = request.form.get('selected_collection')  # Retrieve the selected collection
     username = current_user.username
-    if update_label(ObjectId(row_id), username, new_label_value):
+
+    if update_label(ObjectId(row_id), username, new_label_value, selected_collection):
         flash('برچسب با موفقیت ویرایش شد.', 'success')
     else:
         flash('ویرایش برچسب ناموفق بود.', 'danger')
-    return redirect(url_for('user'))
+
+    # Redirect with selected_collection as a URL parameter
+    return redirect(url_for('user', selected_collection=selected_collection))
+
 
 
 @app.route('/read_one_row_data', methods=['POST'])
@@ -443,18 +473,19 @@ def read_one_row_data():
 @role_required('user')
 @login_required
 def add_label():
-    collection = get_user_collection(current_user.username)
+    selected_collection = request.form.get('selected_collection')  # Retrieve the selected collection
     add_label_form = AddLabelForm()
-    add_label_form.set_label_choices(collection)
+    print(selected_collection)
+    add_label_form.set_label_choices(selected_collection)
     if add_label_form.validate_on_submit():
         row_id = add_label_form.row_id.data
         username = add_label_form.username.data
         label = add_label_form.label.data
-        if add_label_to_data(ObjectId(row_id), label, username):
+        if add_label_to_data(ObjectId(row_id), label, username, selected_collection):
             flash('برچسب با موفقیت اضافه شد.', 'success')
         else:
             flash('افزودن برچسب ناموفق بود.', 'danger')
-    return redirect(url_for('user'))
+    return redirect(url_for('user', selected_collection=selected_collection))
 
 
 if __name__ == '__main__':

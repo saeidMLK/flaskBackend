@@ -4,7 +4,7 @@
     --accent-color: #e74c3c;
     --background-color: #60ab91;
     --text-color: #2c3e50;
-    --sidebar-color: #488d75;
+    --sidebar-color: rgb(70, 152, 123);
     --sidebar-color-hover: #e74c3c;
 }
 
@@ -100,4 +100,28 @@
     scroll-margin-top: 30px; /* Adjust the value as needed */
 }
 
+
+/* Base button style */
+.btn-group-toggle .btn {
+    margin: 5px;
+    transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+.btn-active {
+    background-color: rgba(248, 29, 29, 0.87); /* Change to a different color or shade */
+    color: #312929; /* Optional: change text color */
+    border-color: rgb(5, 204, 144); /* Optional: change border color */
+}
+
+/* Grid layout for buttons */
+#collections-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* Adjust the width of buttons */
+    gap: 15px; /* Space between buttons */
+}
+
+#collections-buttons button {
+    padding: 10px 15px; /* Button padding */
+    font-size: 16px; /* Adjust font size */
+}
 
