@@ -1,0 +1,103 @@
+:root {
+    --primary-header-color: #530d06;
+    --secondary-header-color: #d90b0b;
+    --accent-color: #e74c3c;
+    --background-color: #60ab91;
+    --text-color: #2c3e50;
+    --sidebar-color: #488d75;
+    --sidebar-color-hover: #e74c3c;
+}
+
+.title {
+    text-align: center;
+    font-weight: bolder;
+    padding-bottom: 10px;
+}
+
+/* Container to hold the two halves */
+.halves {
+    display: flex;
+    justify-content: center;
+    align-items: stretch; /* Ensure both halves stretch to the same height */
+    max-width: 75%; /* Example max-width to limit overall container width */
+    margin: 0 auto; /* Center container horizontally */
+    padding-bottom: 20px;
+}
+
+/* Styles for the form half */
+.half_right {
+    display: inline-flex;
+    flex-direction: column;
+    flex-grow: 1; /* Allow to grow equally */
+    border-radius: 0 10px 10px 0;
+    padding: 20px;
+    background-color: rgba(255, 255, 255, 0.60);
+    max-width: 45%;
+}
+
+/* Styles for the image half */
+.half_left {
+    position: relative;
+    display: flex;
+    flex-grow: 1; /* Allow the image half to grow based on the content */
+    border-radius: 10px 0 0 10px;
+    overflow: hidden;
+    max-width: 55%;
+    height: auto;
+}
+
+/* Ensure the image fits within its container */
+.half_left img {
+    width: 100%;
+    height: 100%; /* Make the image take full height of the container */
+    object-fit: cover; /* This will crop the image to fit while preserving aspect ratio */
+}
+
+
+.half_left .secondary_image {
+    position: absolute;
+    height: 40%;
+    width: auto;
+    opacity: 0.5;
+    /* Centering the image */
+    top: 80%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/*.half_right .vector{*/
+/*    padding-top: 40px;*/
+/*    height: 45%;*/
+/*    width: auto;*/
+/*    opacity: 40%;*/
+/*    transform: scaleX(-1); !* Flip the image horizontally *!*/
+/*}*/
+
+
+.input-box select,
+.input-box input {
+    width: 100%;
+    /*height: 50%;*/
+    /*background: transparent;*/
+    outline: none;
+    /*border: 2px solid rgba(255, 255, 255, 0.80);*/
+    border-radius: 40px;
+    font-size: 18px;
+    /*color: white;*/
+}
+
+
+.input-box box-icon {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+}
+
+/*this is for auto scroll adjustment*/
+#conflict_search, #add_avg_label, #extract_data, #add_data, #add_labels, #user_report, #user_labels, #users_report, #report-result {
+    scroll-margin-top: 30px; /* Adjust the value as needed */
+}
+
+

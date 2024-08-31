@@ -1,0 +1,64 @@
+/* Container to hold the two halves */
+.halves {
+    display: flex;
+    justify-content: center;
+    align-items: stretch; /* Ensure both halves stretch to the same height */
+    height: auto; /* Adjust to fit the desired height */
+    max-width: 75%; /* Example max-width to limit overall container width */
+    margin: 0 auto; /* Center container horizontally */
+    padding-bottom: 20px;
+}
+
+/* Styles for the form half */
+.half_right {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 0 10px 10px 0;
+    padding: 20px;
+    background-color: rgba(255, 255, 255, 0.80);
+    height: auto; /* Keep height auto so it adjusts to content */
+    max-width: 45%;
+}
+
+/* Styles for the image half */
+.half_left {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    border-radius: 10px 0 0 10px;
+    overflow: hidden;
+    height: auto; /* Matches the height of .half_right */
+    max-width: 55%;
+}
+
+/* Ensure the image fits well within its container */
+.half_left img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.input-box select,
+.input-box input{
+    width: 100%;
+    height: 50%;
+    /*background: transparent;*/
+    outline: none;
+    /*border: 2px solid rgba(255, 255, 255, 0.80);*/
+    border-radius: 40px;
+    font-size: 18px;
+    /*color: white;*/
+}
+
+/*.input-box input::placeholder{*/
+/*    color: white;*/
+/*}*/
+
+.input-box box-icon{
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+}
