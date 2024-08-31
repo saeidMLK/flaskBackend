@@ -6,71 +6,98 @@
     {#          integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">#}
     <link href="/static/css/bootstrap.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='flash_messages.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css//progressbar.css') }}">
 
     <style>
-        body {
-            {#background-image: url('/static/images/bg-1.jpg');#}
-            background-color: #ced4da;
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
+        /* Define the font */
+        @font-face {
+            font-family: 'sans-serif';
+            src: url('/static/fonts/Dirooz-FD.woff2') format('truetype'); /* Include the TTF font */
+            font-weight: normal;
+            font-style: normal;
         }
+
+        body {
+            background-color: var(--background-color);
+            background-image: url('/static/images/Tiling.svg.png');
+            background-size: 450px 300px; /* Width and height of each tile */
+            background-repeat: repeat; /* This will tile the image */
+            font-family: 'sans-serif', Tahoma, sans-serif; /* Apply the custom font */
+
+        }
+
         .container {
-            background-color: rgba(255, 255, 255, 0.85); /* Optional: makes the content area slightly transparent */
-            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.40); /* Optional: makes the content area slightly transparent */
+            padding: 40px 80px 40px 80px;
             border-radius: 10px;
         }
     </style>
     <title>{% block title %}سیستم برچسب زنی{% endblock %}</title>
 </head>
-<body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-black">
-    <div class="container-fluid">
-        <div>
-            <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('home') }}">خانه</a>
-                </li>
-                {% block navitem_right %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin') }}">مدیر</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('user') }}">کاربر</a>
-                    </li>
-                {% endblock %}
 
-            </ul>
+<body>
+{#    <header>#}
+        <nav class="navbar navbar-expand-lg navbar-dark"
+             style="background-color:var(--primary-header-color); color: white; position: sticky; top: -45px; z-index: 1100;">
+            <div class="container-fluid">
+                <div>
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('home') }}">خانه</a>
+                        </li>
+                        {% block navitem_right %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin') }}">مدیر</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('user') }}">کاربر</a>
+                            </li>
+                        {% endblock %}
+
+                    </ul>
+                </div>
+                <div>
+                    <ul class="navbar-nav">
+                        {% block navitem_left %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('login') }}">ورود</a>
+                            </li>
+                        {% endblock %}
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        {% block navbar_sub %} {% endblock %}
+
+{#    </header>#}
+
+    <div style="display: flex;">
+        <div style="flex: 0 0 20%; background-color:var(--sidebar-color);">
+            {% block sidebar %} {% endblock %}
         </div>
-        <div>
-            <ul class="navbar-nav">
-                {% block navitem_left %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('login') }}">ورود</a>
-                    </li>
-                {% endblock %}
-            </ul>
+        <div> {#style="flex: 0 0 80%;"#}
+            <div class="container">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="alert-container">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+                {% block content %} {% endblock %}
+            </div>
         </div>
     </div>
-</nav>
-{% block navbargray %} {% endblock %}
-<div style="padding-top: 10px"></div>
-<div class="container">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="alert-container">
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
-    {% block content %} {% endblock %}
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
-        crossorigin="anonymous"></script>
-<script src="{{ url_for('static', filename='js/base.js') }}"></script>
 
+    {% block scripts %}
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+                integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+                crossorigin="anonymous"></script>
+        <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+    {% endblock %}
 </body>
 </html>

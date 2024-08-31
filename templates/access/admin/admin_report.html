@@ -1,29 +1,101 @@
 {% extends 'access/admin/admin_base.html' %}
 
-{% block content %}
-    <h2 style="text-align: center">گزارشات</h2>
 
-    {% if users %}
-        <h5 style="margin-top: 70px">کاربر مورد نظر را برای گزارش انتخاب کنید:</h5>
-        <form action="{{ url_for('admin_report') }}" method="post">
-            {{ report_task_form.hidden_tag() }}
-            {{ report_task_form.username(class="form-control") }}
-            <button type="submit" name="labels" class="btn btn-primary btn-sm" style="margin: 20px;">دریافت تعداد برچسب
-                ها
-            </button>
-            <button type="submit" name="data" class="btn btn-primary btn-sm" style="margin: 20px;">نمایش برچسب ها
-            </button>
-        </form>
-    {% else %}
-        <p>کاربری یافت نشد!</p>
-    {% endif %}
+{% block sidebar %}
+    <nav class="navbar navbar-expand-lg navbar-dark p-0"
+         style="background-color: var(--sidebar-color);margin-top: 10px; position: sticky; top: 25px; z-index: 1000;">
+        <div class="container-fluid d-flex flex-column justify-content-start align-items-stretch p-0">
+            <ul class="navbar-nav flex-column w-100" style="padding-inline-start: 0;">
+                <li class="nav-item w-100">
+                    <a class="nav-link nav-link2 w-100 text-center" href="{{ url_for('admin_report') }}#user_report"
+                       style="border: 1px solid #15482e; padding: 10px; margin-bottom: 5px;">
+                        گزارش عملکرد فرد
+                    </a>
+                </li>
+                <li class="nav-item w-100">
+                    <a class="nav-link nav-link2 w-100 text-center" href="{{ url_for('admin_report') }}#user_labels"
+                       style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
+                        نمایش برچسب های فرد
+                    </a>
+                </li>
+                <li class="nav-item w-100">
+                    <a class="nav-link nav-link2 w-100 text-center" href="{{ url_for('admin_report') }}#users_report"
+                       style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
+                        گزارش کلی همه کاربران
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <style>
+        .nav-link2:hover {
+            background-color: rgba(23, 68, 42, 0.5); /* Light transparent white on hover */
+            transition: background-color 0.3s ease;
+        }
+    </style>
+{% endblock %}
+
+
+{% block content %}
+    <div class="halves">
+        <div class="half_right input-box">
+            <h2 class="title">گزارشات</h2>
+            {% if users %}
+                <h5 style="margin-top: 70px">کاربر مورد نظر را برای گزارش انتخاب کنید:</h5>
+                <form action="{{ url_for('admin_report') }}#report-result" method="post" class="input-box">
+                    {{ report_task_form.hidden_tag() }}
+                    {{ report_task_form.username(class="form-control") }}
+                    <button id="user_report" type="submit" name="labels" class="btn btn-success"
+                            style="width:100%; margin-top: 20px;">
+                        دریافت عملکرد فردی
+                    </button>
+                    <button id="user_labels" type="submit" name="data" class="btn btn-success"
+                            style="width:100%; margin-top: 20px;">
+                        نمایش برچسب ها
+                    </button>
+                    <button id="users_report" type="submit" name="users_report" class="btn btn-success"
+                            style="width: 100%; margin-top: 20px;">
+                        گزارش کلی کاربران
+                    </button>
+                </form>
+            {% else %}
+                <p>کاربری یافت نشد!</p>
+            {% endif %}
+        </div>
+        <div class="half_left">
+            <img src="/static/images/left-side2.jpg" alt="Your Image">
+        </div>
+    </div>
+
 
     {% if report_data %}
-        <div class="report-result" style="margin: 20px;">
+        <div id="report-result" class="report-result"
+             style="margin: 20px; background-color: rgba(255,255,255,0.40); padding: 20px; border-radius: 10px;">
             <h3 style="padding-bottom: 15px ">گزارش برای {{ report_data.username }}</h3>
             {% if report_data.type == 'labels' %}
-                <p>تعداد برچسب ها: {{ report_data.number_of_labels }}</p>
-                <p>درجه انطباق: {{ report_data.consensus_degree }}</p>
+                <b style=" width: 40%">تعداد برچسب ها: {{ report_data.number_of_labels }}</b>
+                <section>
+                    <div style="display: inline-flex;">
+                        <b style=" width: 40%">درجه انطباق:</b>
+                        <div class="health">
+                              <span class="progress-bar" style="width: {{ report_data.consensus_degree }}%;">
+                                <span class="shade warm"></span>
+                              </span>
+                        </div>
+                        <b style=" width: 20%">{{ report_data.consensus_degree }} %</b>
+                    </div>
+                    <div style="display: inline-flex">
+                        <b style=" width: 40%">درصد برچسب گذاری:</b>
+                        <div class="health">
+                              <span class="progress-bar" style="width: {{ report_data.label_percentage }}%;">
+                                <span class="shade warm"></span>
+                              </span>
+                        </div>
+                        <b style=" width: 20%">{{ report_data.label_percentage }} %</b>
+                        <div>
+                </section>
+
             {% elif report_data.type == 'data' %}
                 {#                <p>تعداد کل صفحات: {{ report_data.total_pages }}</p>#}
                 {#                <p>صفحه فعلی: {{ report_data.page }}</p>#}
@@ -73,7 +145,41 @@
                     {% endif %}
                 </div>
                 <!-- End Pagination -->
+
+
+            {% elif report_data.type == 'users_report' %}
+                {% for user, data in report_data.users_report_data.items() %}
+                    <h4 style="padding-top: 10px">{{ user }}</h4>
+                    <section>
+                        <div style="display: inline-flex;">
+                            <b style=" width: 40%">درجه انطباق:</b>
+                            <div class="health">
+                              <span class="progress-bar" style="width: {{ data.consensus_degree }}%;">
+                                <span class="shade warm"></span>
+                              </span>
+                            </div>
+                            <b style=" width: 20%">{{ data.consensus_degree }} %</b>
+                        </div>
+                        <div style="display: inline-flex">
+                            <b style=" width: 40%">درصد برچسب گذاری:</b>
+                            <div class="health">
+                              <span class="progress-bar" style="width: {{ data.label_percentage }}%;">
+                                <span class="shade warm"></span>
+                              </span>
+                            </div>
+                            <b style=" width: 20%">{{ data.label_percentage }} %</b>
+                        <div>
+                    </section>
+                {% endfor %}
             {% endif %}
         </div>
     {% endif %}
+
 {% endblock %}
+
+{% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+            crossorigin="anonymous"></script>
+{% endblock %}
+

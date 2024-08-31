@@ -159,6 +159,7 @@ def get_user_performance(username):
     total_consensus_degree = 0
     collection_name = get_user_collection(username)
     collection = db[collection_name]
+    total_rows = collection.count_documents({})  # Get the total number of rows in the collection
     for row in collection.find():
         # Retrieve the label dictionary for the current row
         label_dict = row.get("label", {})
@@ -174,11 +175,14 @@ def get_user_performance(username):
 
     # Avoid division by zero by checking if number_of_labels is greater than zero
     if number_of_labels > 0:
-        consensus_degree = total_consensus_degree / number_of_labels
+        consensus_degree = round((total_consensus_degree / number_of_labels) *100)
+        label_percentage = round((number_of_labels / total_rows) * 100)  # Calculate the percentage of labels set by the user
     else:
         consensus_degree = 0
+        label_percentage = 0
 
-    return number_of_labels, consensus_degree
+
+    return number_of_labels, consensus_degree, label_percentage
 
 
 def get_user_labels(username, page, per_page=10):
@@ -276,4 +280,3 @@ def update_label(row_id, username, new_label_value):
 
 def get_label_options(collection_name):
     return ConfigDB.get_data_labels(collection_name)
-

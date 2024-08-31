@@ -1,154 +1,217 @@
 {% extends 'access/admin/admin_base.html' %}
 
+
+{% block sidebar %}
+    <nav class="navbar navbar-expand-lg navbar-dark p-0"
+         style="background-color: var(--sidebar-color);margin-top: 10px; position: sticky; top: 25px; z-index: 1000;">
+        <div class="container-fluid d-flex flex-column justify-content-start align-items-stretch p-0">
+            <ul class="navbar-nav flex-column w-100" style="padding-inline-start: 0;">
+                <li class="nav-item w-100">
+                    <a class="nav-link nav-link2 w-100 text-center"
+                       href="{{ url_for('admin_db_management') }}#conflict_search"
+                       style="border: 1px solid #15482e; padding: 10px; margin-bottom: 5px;">
+                        رفع تناقض در برچسب ها
+                    </a>
+                </li>
+                <li class="nav-item w-100">
+                    <a class="nav-link nav-link2 w-100 text-center"
+                       href="{{ url_for('admin_db_management') }}#add_avg_label"
+                       style="border: 1px solid #15482e; padding: 10px; margin-bottom: 5px;">
+                        افزودن برچسب تجمعی
+                    </a>
+                </li>
+                <li class="nav-item w-100">
+                    <a class="nav-link nav-link2 w-100 text-center"
+                       href="{{ url_for('admin_db_management') }}#extract_data"
+                       style="border: 1px solid #15482e; padding: 10px; margin-bottom: 5px;">
+                        استخراج پایگاه داده
+                    </a>
+                </li>
+                <li class="nav-item w-100">
+                    <a class="nav-link nav-link2 w-100 text-center" href="{{ url_for('admin_db_management') }}#add_data"
+                       style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
+                        درج یک مجموعه داده
+                    </a>
+                </li>
+                <li class="nav-item w-100">
+                    <a class="nav-link nav-link2 w-100 text-center"
+                       href="{{ url_for('admin_db_management') }}#add_labels"
+                       style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
+                        اختصاص برچسب برای داده ها
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <style>
+        .nav-link2:hover {
+            background-color: rgba(23, 68, 42, 0.5); /* Light transparent white on hover */
+            transition: background-color 0.3s ease;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
-    <h2 style="text-align: center">مدیریت پایگاه داده</h2>
+    <div class="halves" style="max-width: 100%">
+        <div class="half_right input-box" style="max-width: 75%">
 
+            <h2 class="title">مدیریت پایگاه داده</h2>
 
-    <form action="{{ url_for('admin_db_management') }}" method="post" onsubmit="updateThresholdHiddenField()">
-        <h5 style="margin-top: 70px">رفع تناقض در برچسب ها</h5>
-        {{ conflict_search_form.hidden_tag() }}
-        <div class="form-group" style="margin-right: 20px">
-            <label for="collection_name">مجموعه داده مورد نظر را انتخاب کنید:</label>
-            {{ conflict_search_form.data_collection(class="form-control") }}
-        </div>
-        <div class="form-group" style="margin-top: 10px">
-            <label for="threshold" style="margin: 20px">حد آستانه تناقض برای برچسب‌ها:</label>
-            <input type="range" class="form-range" id="threshold" name="threshold" min="0.1" max="1" step="0.1"
-                   value="{{ threshold }}" oninput="this.nextElementSibling.value = this.value"
-                   style="width: 30%; margin: 15px; padding-top: 15px">
-            <output style="margin: 20px">{{ threshold }}</output>
-        </div>
-        <input type="hidden" id="hiddenThreshold" name="hidden_threshold" value="{{ threshold }}">
-        <button type="submit" name="search" class="btn btn-primary btn-sm" style="margin-top: 10px; margin-right: 20px">
-            یافتن داده
-            متناقض
-        </button>
-    </form>
-    <div style="margin-right: 20px">
-        {% if conflict_row %}
-            <p style="padding-top: 10px">اولین داده متناقض:</p>
-            <table class="table table-striped">
-                <thead>
-                <tr>
-                    <th>داده</th>
-                    <th>برچسب‌ها</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <td>
-                        {% if conflict_row['data'].items %}
-                            <!-- Handle the case where 'data' is a dictionary -->
-                            <ul>
-                                {% for key, value in conflict_row['data'].items() %}
-                                    <li><strong>{{ key }}:</strong> {{ value }}</li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            <!-- Handle the case where 'data' is a string -->
-                            <strong>{{ conflict_row['data'] }}</strong>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% for key, value in conflict_row['label'].items() %}
-                            <strong>{{ key }}:</strong> {{ value }}{% if not loop.last %}<br>{% endif %}
-                        {% endfor %}
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-            <form action="{{ url_for('admin_db_management') }}" method="post">
+            <form action="{{ url_for('admin_db_management') }}" method="post" onsubmit="updateThresholdHiddenField()"
+                  class="input-box">
+                <h5 id="conflict_search" style="margin-top: 40px">رفع تناقض در برچسب ها</h5>
                 {{ conflict_search_form.hidden_tag() }}
-                <p>برچسب مناسب را انتخاب کنید: </p>
-                <input type="hidden" name="row_id" value="{{ conflict_row['_id'] }}">
-                {{ conflict_search_form.label(class="form-control") }}
-                <input type="hidden" name="hidden_threshold" value="{{ threshold }}">
-                <input type="hidden" name="hidden_collection" value="{{ conflict_search_form.data_collection.data }}">
-                <button type="submit" name="set_label" class="btn btn-primary btn-sm" style="margin-top: 20px">افزودن
-                    برچسب
+                <div class="form-group" style="margin-right: 20px">
+                    <label for="collection_name">مجموعه داده مورد نظر را انتخاب کنید:</label>
+                    {{ conflict_search_form.data_collection(class="form-control") }}
+                </div>
+                <div class="form-group" style="margin-top: 10px">
+                    <label for="threshold" style="margin: 20px">حد آستانه تناقض برای برچسب‌ها:</label>
+                    <input type="range" class="form-range" id="threshold" name="threshold" min="0.1" max="1" step="0.1"
+                           value="{{ threshold }}" oninput="this.nextElementSibling.value = this.value"
+                           style="width: 30%; margin: 15px; padding-top: 15px">
+                    <output>{{ threshold }}</output>
+                </div>
+                <input type="hidden" id="hiddenThreshold" name="hidden_threshold" value="{{ threshold }}">
+                <button type="submit" name="search" class="btn btn-success"
+                        style="margin-top: 10px; width: 100%">
+                    یافتن داده متناقض
                 </button>
             </form>
-        {% else %}
-            {% if request.method == 'POST' %}
-                <p style="margin-top: 15px">هیچ داده متناقضی یافت نشد!</p>
+            <div style="margin-right: 20px">
+                {% if conflict_row %}
+                    <p style="padding-top: 10px">اولین داده متناقض:</p>
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>داده</th>
+                            <th>برچسب‌ها</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>
+                                {% if conflict_row['data'].items %}
+                                    <!-- Handle the case where 'data' is a dictionary -->
+                                    <ul>
+                                        {% for key, value in conflict_row['data'].items() %}
+                                            <li><strong>{{ key }}:</strong> {{ value }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <!-- Handle the case where 'data' is a string -->
+                                    <strong>{{ conflict_row['data'] }}</strong>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% for key, value in conflict_row['label'].items() %}
+                                    <strong>{{ key }}:</strong> {{ value }}{% if not loop.last %}<br>{% endif %}
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <form action="{{ url_for('admin_db_management') }}" method="post">
+                        {{ conflict_search_form.hidden_tag() }}
+                        <p>برچسب مناسب را انتخاب کنید: </p>
+                        <input type="hidden" name="row_id" value="{{ conflict_row['_id'] }}">
+                        {{ conflict_search_form.label(class="form-control") }}
+                        <input type="hidden" name="hidden_threshold" value="{{ threshold }}">
+                        <input type="hidden" name="hidden_collection"
+                               value="{{ conflict_search_form.data_collection.data }}">
+                        <button type="submit" name="set_label" class="btn btn-danger btn-success"
+                                style=" width:100%; margin-top: 20px">
+                            افزودن
+                            برچسب
+                        </button>
+                    </form>
+                {% else %}
+                    {% if request.method == 'POST' %}
+                        <p style="margin-top: 15px">هیچ داده متناقضی یافت نشد!</p>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <h5 id="add_avg_label" style="margin-top: 80px">افزودن برچسب تجمعی</h5>
+            <form action="{{ url_for('add_average_label') }}" method="post" style="margin-right: 20px">
+                {{ add_average_label_form.hidden_tag() }}
+                <div class="form-group">
+                    <label for="collection_name">مجموعه مورد نظر را انتخاب کنید:</label>
+                    {{ add_average_label_form.data_collection(class="form-control") }}
+                </div>
+                {{ add_average_label_form.set_average_label(class="btn btn-success", style="margin-top: 10px") }}
+            </form>
+
+
+            <h5 id="extract_data" style="margin-top: 80px">استخراج پایگاه داده</h5>
+            <form action="{{ url_for('extract_db') }}" method="post" style="margin-right: 20px">
+                {{ extract_db_form.hidden_tag() }}
+                <div class="form-group">
+                    <label for="collection_name">مجموعه مورد نظر را انتخاب کنید:</label>
+                    {{ extract_db_form.collection_name(class="form-control") }}
+                </div>
+                {{ extract_db_form.submit(class="btn btn-success", style="margin-top: 10px") }}
+            </form>
+
+            {% if extracted %}
+                <a href="{{ url_for('download_file', collection_name=collection_name) }}" class="btn btn-success"
+                   style="background:#1eaf1e; margin-top: 20px; margin-right: 20px">دانلود پایگاه داده استخراج شده.</a>
             {% endif %}
-        {% endif %}
+
+            <h5 id="add_data" style="margin-top: 80px">درج یک مجموعه داده</h5>
+            <form action="{{ url_for('import_db') }}" method="post" enctype="multipart/form-data"
+                  style="margin-right: 20px">
+                {{ import_db_form.hidden_tag() }}
+                {#        <div class="form-group" style="padding-top:10px ">#}
+                {#            <label for="collection_name">نام مجموعه:</label>#}
+                {#            {{ import_db_form.collection_name(class="form-control") }}#}
+                {#        </div>#}
+                <div class="form-group" style="padding-top:10px ">
+                    <label for="file"> فایل JSON:</label>
+                    {{ import_db_form.file(class="form-control") }}
+                </div>
+                {{ import_db_form.submit(class="btn btn-success", style="margin-top: 10px") }}
+            </form>
+
+
+            <h5 id="add_labels" style="margin-top: 80px">اختصاص برچسب برای داده ها</h5>
+            <form action="{{ url_for('admin_db_management') }}" method="post" id="optionForm"
+                  onsubmit="updateHiddenField()"
+                  style="margin-right: 20px">
+                {{ admin_label_config_form.hidden_tag() }}
+                <div class="form-group">
+                    <label for="collection_name">مجموعه داده مورد نظر را انتخاب کنید:</label>
+                    {{ admin_label_config_form.data_collection(class="form-control") }}
+                </div>
+                {{ admin_label_config_form.labels(id='stringfield') }}  <!-- Add the hidden field here -->
+                <div class="input-group" style=" margin-top: 10px">
+                    {{ admin_label_config_form.new_option.label(style="margin-right: 10px; padding-top: 5px") }} {{ admin_label_config_form.new_option(class="form-control", style="margin-right: 10px", size=20) }}
+                    <button type="button" onclick="addOption()" class="btn btn-success"
+                            style="margin-right: 2px;">افزودن
+                    </button>
+                </div>
+                <select id="dynamicSelect" name="dynamicSelect"
+                        style="width: 100%; padding: 7px; margin-top: 10px; border: 0">
+                    <option value="" disabled selected>اینجا برچسب های مورد نظر می باشند</option>
+                </select>
+                <button type="submit" name="save_labels" class="btn btn-danger btn-success"
+                        style="margin-top: 10px; margin-bottom: 50px; width:100%">
+                    افزودن این برچسب ها
+                </button>
+            </form>
+
+            <script src="{{ url_for('static', filename='js/admin_db.js') }}"></script>
+            <script>
+                function updateThresholdHiddenField() {
+                    var rangeInput = document.getElementById('threshold');
+                    var hiddenInput = document.getElementById('hiddenThreshold');
+                    hiddenInput.value = rangeInput.value;
+                }
+            </script>
+        </div>
+        <div class="half_left" style="max-width: 30%">
+            <img src="/static/images/left-side4.jpg">
+        </div>
     </div>
-
-    <h5 style="margin-top: 80px">افزودن برچسب تجمعی</h5>
-    <form action="{{ url_for('add_average_label') }}" method="post" style="margin-right: 20px">
-        {{ add_average_label_form.hidden_tag() }}
-        <div class="form-group">
-            <label for="collection_name">مجموعه مورد نظر را انتخاب کنید:</label>
-            {{ add_average_label_form.data_collection(class="form-control") }}
-        </div>
-        {{ add_average_label_form.set_average_label(class="btn btn-primary btn-sm", style="margin-top: 10px") }}
-    </form>
-
-
-    <h5 style="margin-top: 80px">استخراج پایگاه داده</h5>
-    <form action="{{ url_for('extract_db') }}" method="post" style="margin-right: 20px">
-        {{ extract_db_form.hidden_tag() }}
-        <div class="form-group">
-            <label for="collection_name">مجموعه مورد نظر را انتخاب کنید:</label>
-            {{ extract_db_form.collection_name(class="form-control") }}
-        </div>
-        {{ extract_db_form.submit(class="btn btn-primary btn-sm", style="margin-top: 10px") }}
-    </form>
-
-    {% if extracted %}
-        <a href="{{ url_for('download_file', collection_name=collection_name) }}" class="btn btn-success"
-           style="background:#1eaf1e; margin-top: 20px; margin-right: 20px">دانلود پایگاه داده استخراج شده.</a>
-    {% endif %}
-
-    <h5 style="margin-top: 80px">درج یک مجموعه داده</h5>
-    <form action="{{ url_for('import_db') }}" method="post" enctype="multipart/form-data" style="margin-right: 20px">
-        {{ import_db_form.hidden_tag() }}
-        {#        <div class="form-group" style="padding-top:10px ">#}
-        {#            <label for="collection_name">نام مجموعه:</label>#}
-        {#            {{ import_db_form.collection_name(class="form-control") }}#}
-        {#        </div>#}
-        <div class="form-group" style="padding-top:10px ">
-            <label for="file"> فایل JSON:</label>
-            {{ import_db_form.file(class="form-control") }}
-        </div>
-        {{ import_db_form.submit(class="btn btn-primary btn-warning", style="margin-top: 10px") }}
-    </form>
-
-
-
-    <h5 style="margin-top: 80px">اختصاص برچسب برای داده ها</h5>
-    <form action="{{ url_for('admin_db_management') }}" method="post" id="optionForm" onsubmit="updateHiddenField()"
-          style="margin-right: 20px">
-        {{ admin_label_config_form.hidden_tag() }}
-        <div class="form-group">
-            <label for="collection_name">مجموعه داده مورد نظر را انتخاب کنید:</label>
-            {{ admin_label_config_form.data_collection(class="form-control") }}
-        </div>
-        {{ admin_label_config_form.labels(id='stringfield') }}  <!-- Add the hidden field here -->
-        <div class="input-group" style="width: 30%; margin-top: 10px">
-            {{ admin_label_config_form.new_option.label(style="margin-right: 10px; padding-top: 5px") }} {{ admin_label_config_form.new_option(class="form-control", style="margin-right: 10px", size=20) }}
-            <button type="button" onclick="addOption()" class="btn btn-primary btn-sm"
-                    style="margin-right: 5px; padding: 5px">افزودن
-            </button>
-        </div>
-        <select id="dynamicSelect" name="dynamicSelect" style="width: 100%; padding: 8px; margin-top: 10px">
-            <option value="" disabled selected>اینجا برچسب های مورد نظر می باشند</option>
-        </select>
-        <button type="submit" name="save_labels" class="btn btn-primary btn-sm"
-                style="margin-top: 10px; margin-bottom: 50px">
-            افزودن این برچسب ها
-        </button>
-    </form>
-
-    <script src="{{ url_for('static', filename='js/admin_db.js') }}"></script>
-    <script>
-        function updateThresholdHiddenField() {
-            var rangeInput = document.getElementById('threshold');
-            var hiddenInput = document.getElementById('hiddenThreshold');
-            hiddenInput.value = rangeInput.value;
-        }
-    </script>
-
-
 {% endblock %}

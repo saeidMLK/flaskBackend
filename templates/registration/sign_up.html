@@ -7,34 +7,40 @@
     </li>
 {% endblock %}
 {% block content %}
-    <div class="container">
-        <h1 style="padding-bottom: 20px">ایجاد کاربر</h1>
-        <form method="post">
-            {{ form.hidden_tag() }}
-            <div class="mb-3">
-                {{ form.username.label(class="form-label") }}
-                {{ form.username(class="form-control") }}
-            </div>
-            <div class="mb-3">
-                {{ form.collections.label(class="form-label") }}
-                {{ form.collections(class="form-control") }}
-            </div>
-            <div class="mb-3">
-                {{ form.password.label(class="form-label") }}
-                {{ form.password(class="form-control") }}
-            </div>
-            <div class="mb-3">
-                {{ form.confirm_password.label(class="form-label") }}
-                {{ form.confirm_password(class="form-control") }}
-            </div>
-            <div class="mb-3">
-                {{ form.role.label(class="form-label") }}
-                {{ form.role(class="form-select") }}
-            </div>
-            {#        <p>Have an account? Login <a href="{{ url_for('login') }}">Here</a>!</p>#}
-            {{ form.submit(class="btn btn-success") }}
-        </form>
+    <div class="halves">
+        <div class="half_right input-box">
+            <h1 style="padding-bottom: 20px">ایجاد کاربر</h1>
+            <form method="post">
+                {{ form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ form.username.label(class="form-label") }}
+                    {{ form.username(class="form-control") }}
+                </div>
+                <div class="mb-3">
+                    {{ form.collections.label(class="form-label") }}
+                    {{ form.collections(class="form-control") }}
+                </div>
+                <div class="mb-3">
+                    {{ form.password.label(class="form-label") }}
+                    {{ form.password(class="form-control") }}
+                </div>
+                <div class="mb-3">
+                    {{ form.confirm_password.label(class="form-label") }}
+                    {{ form.confirm_password(class="form-control") }}
+                </div>
+                <div class="mb-3">
+                    {{ form.role.label(class="form-label") }}
+                    {{ form.role(class="form-select") }}
+                </div>
+                {#        <p>Have an account? Login <a href="{{ url_for('login') }}">Here</a>!</p>#}
+                {{ form.submit(class="btn btn-success") }}
+            </form>
+        </div>
+        <div class="half_left">
+            <img src="/static/images/login.png" alt="Your Image">
+        </div>
     </div>
+
 {% endblock %}
 
 

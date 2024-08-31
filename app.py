@@ -156,6 +156,7 @@ def remove_user():
 @role_required('admin')
 def admin_report():
     users = get_all_users()
+    print(users)
     report_task_form = ReportTaskForm()
     if users:
         report_task_form.username.choices = [(user.username, f"{user.username} -- {user.role}") for user in users]
@@ -167,11 +168,12 @@ def admin_report():
     if report_task_form.validate_on_submit():
         username = report_task_form.username.data
         if 'labels' in request.form:
-            number_of_labels, consensus_degree = get_user_performance(username)
+            number_of_labels, consensus_degree, label_percentage = get_user_performance(username)
             report_data = {
                 'type': 'labels',
                 'username': username,
                 'number_of_labels': number_of_labels,
+                'label_percentage': label_percentage,
                 'consensus_degree': consensus_degree
             }
         if 'data' in request.form:
@@ -184,6 +186,16 @@ def admin_report():
                 'page': page,
                 'per_page': per_page,
                 'rows': rows
+            }
+        if 'users_report' in request.form:
+            users_report_data = {}
+            for user in users:
+                number_of_labels, consensus_degree, label_percentage = get_user_performance(user.username)
+                users_report_data[user.username] = {'label_percentage': label_percentage, 'consensus_degree': consensus_degree}
+            report_data = {
+                'type': 'users_report',
+                'username': 'همه افراد',
+                'users_report_data': users_report_data
             }
     else:
         # Handle the case when navigating through pages without form submission

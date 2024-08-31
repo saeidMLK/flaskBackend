@@ -1,28 +1,60 @@
 {% extends 'access/admin/admin_base.html' %}
 
+
+{% block sidebar %}
+    <nav class="navbar navbar-expand-lg navbar-dark p-0"
+         style="background-color: var(--sidebar-color); margin-top: 10px; position: sticky; top: 25px; z-index: 1000;">
+        <div class="container-fluid d-flex flex-column justify-content-start align-items-stretch p-0">
+            <ul class="navbar-nav flex-column w-100" style="padding-inline-start: 0;">
+                <li class="nav-item w-100">
+                    <a class="nav-link nav-link2 w-100 text-center" href="{{ url_for('admin_user_management') }}#new_user"
+                       style="border: 1px solid #15482e; padding: 10px; margin-bottom: 5px;">
+                        ساخت کاربر جدید
+                    </a>
+                </li>
+                <li class="nav-item w-100">
+                    <a class="nav-link nav-link2 w-100 text-center" href="{{ url_for('admin_user_management') }}#remove_user"
+                       style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
+                        حذف کاربر
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <style>
+        .nav-link2:hover {
+            background-color: rgba(23, 68, 42, 0.5); /* Light transparent white on hover */
+            transition: background-color 0.3s ease;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
-    <h2 style="text-align: center">مدیریت کاربران</h2>
+    <div class="halves">
+        <div class="half_right input-box">
+            <h2 class="title">مدیریت کاربران</h2>
+            <h5 id="new_user" style="margin-top: 70px">ساخت کاربر جدید:</h5>
+            <p>آیا میخواهید یک کاربر جدید اضافه کنید؟</p>
+            <a href="{{ url_for('sign_up') }}" class="btn btn-success">ایجاد کاربر</a>
 
+            {% if users %}
+                <h5 id="remove_user" style="margin-top: 70px">حذف کاربر</h5>
+                <form action="{{ url_for('remove_user') }}" method="post">
+                    {{ remove_user_form.hidden_tag() }}
+                    <p>کاربری که مایل به حذف آن هستید را انتخاب کنید:</p>
+                    {{ remove_user_form.username(class="form-control") }}
+                    {{ remove_user_form.submit(class="btn btn-danger btn-success", style="margin-top: 10px") }}
+                </form>
+            {% else %}
+                <p>کاربری یافت نشد.</p>
+            {% endif %}
 
-    <h5 style="margin-top: 70px">ساخت کاربر جدید:</h5>
-    <p>آیا میخواهید یک کاربر جدید اضافه کنید؟</p>
-    <a href="{{ url_for('sign_up') }}" class="btn btn-primary btn-sm">ایجاد کاربر</a>
-
-
-    {% if users %}
-        <h5 style="margin-top: 70px">حذف کاربر</h5>
-        <form action="{{ url_for('remove_user') }}" method="post">
-            {{ remove_user_form.hidden_tag() }}
-            <p>کاربری که مایل به حذف آن هستید را انتخاب کنید:</p>
-            {{ remove_user_form.username(class="form-control") }}
-            {{ remove_user_form.submit(class="btn btn-danger btn-sm", style="margin-top: 10px") }}
-        </form>
-    {% else %}
-        <p>کاربری یافت نشد.</p>
-    {% endif %}
-
-
-
+        </div>
+        <div class="half_left">
+            <img src="/static/images/login.png" alt="Your Image">
+        </div>
+    </div>
 
 
 {% endblock %}
