@@ -1,6 +1,5 @@
 {% extends 'access/admin/admin_base.html' %}
 
-
 {% block sidebar %}
     <div style="flex: 0 0 20%; background-color:var(--sidebar-color);">
 
@@ -60,5 +59,69 @@
         </div>
     </div>
 
+
+{% endblock %}
+
+{% block left_sidebar %}
+    <div style="flex: 0 0 20%; background-color:var(--sidebar-color);">
+        <nav class="navbar navbar-expand-lg navbar-dark p-0"
+             style="background-color: var(--sidebar-color); margin-top: 20px; position: sticky; top: 25px; z-index: 1000;">
+            <div class="container-fluid d-flex flex-column justify-content-start align-items-stretch p-0">
+                <ul class="navbar-nav flex-column w-100" style="padding-inline-start: 0;">
+                    <!-- Admin Users -->
+                    {% if admin_users %}
+                        <li class="nav-item w-100">
+                            <div style="margin-bottom: 20px">
+                                <option style="background-color: #2D4463; color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 5px; border: 1px solid #000000;">کاربران ادمین:
+                                </option>
+                                <ul style="list-style: none; padding: 0; margin: 0;">
+                                    {% for user in admin_users %}
+                                        <li style="padding: 5px; margin: 5px 0 5px 0; text-align: center; background-color: rgba(45,68,99,0.7); color: #000000;">{{ user }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </li>
+                    {% endif %}
+
+                    <!-- Supervisor Users -->
+                    {% if supervisor_users %}
+                        <li class="nav-item w-100">
+                            <div style="margin-bottom: 20px">
+                                <option style="background-color: #8A3463; color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 5px; border: 1px solid #000000;">کاربران سوپروایزر:
+                                </option>
+                                <ul style="list-style: none; padding: 0; margin: 0;">
+                                    {% for user in supervisor_users %}
+                                        <li style="padding: 5px;  margin: 5px 0 5px 0; text-align: center; background-color: rgba(138,52,99,0.7); color: black;">{{ user }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </li>
+                    {% endif %}
+
+                    <!-- User Users -->
+                    {% if user_users %}
+                        <li class="nav-item w-100">
+                            <div style="margin-bottom: 20px">
+                                <option style="background-color: #BC4347; color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 5px;  border: 1px solid #000000;">کاربران برچسب گذار:
+                                </option>
+                                <ul style="list-style: none; padding: 0; margin: 0;">
+                                    {% for user in user_users %}
+                                        <li style="padding: 5px;  margin: 5px 0 5px 0; text-align: center; background-color: rgba(188,67,71,0.7); color: black;">{{ user }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </nav>
+
+    </div>
+    <style>
+        .nav-link2:hover {
+            background-color: rgba(23, 68, 42, 0.5); /* Light transparent white on hover */
+            transition: background-color 0.3s ease;
+        }
+    </style>
 
 {% endblock %}

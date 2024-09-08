@@ -1,5 +1,11 @@
-{% extends 'access/admin/admin_base.html' %}
-
+{% extends 'main/base.html' %}
+{% block title %}  صفحه مدیریت {% endblock %}
+{% block navitem_right %}{% endblock %}
+{% block navitem_left %}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('logout') }}">خروج</a>
+    </li>
+{% endblock %}
 
 {% block sidebar %}
     <div style="flex: 0 0 20%; background-color:var(--sidebar-color); border-radius: 0 10px 10px 0">
@@ -9,35 +15,35 @@
                 <ul class="navbar-nav flex-column w-100" style="padding-inline-start: 0;">
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
-                           href="{{ url_for('admin_db_management') }}#conflict_search"
+                           href="{{ url_for('supervisor') }}#conflict_search"
                            style="border: 1px solid #15482e; padding: 10px; margin-bottom: 5px;">
                             رفع تناقض در برچسب ها
                         </a>
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
-                           href="{{ url_for('admin_db_management') }}#add_avg_label"
+                           href="{{ url_for('supervisor') }}#add_avg_label"
                            style="border: 1px solid #15482e; padding: 10px; margin-bottom: 5px;">
                             افزودن برچسب تجمعی
                         </a>
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
-                           href="{{ url_for('admin_db_management') }}#extract_data"
+                           href="{{ url_for('supervisor') }}#extract_data"
                            style="border: 1px solid #15482e; padding: 10px; margin-bottom: 5px;">
                             استخراج پایگاه داده
                         </a>
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
-                           href="{{ url_for('admin_db_management') }}#add_data"
+                           href="{{ url_for('supervisor') }}#add_data"
                            style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
                             درج یک مجموعه داده
                         </a>
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
-                           href="{{ url_for('admin_db_management') }}#add_labels"
+                           href="{{ url_for('supervisor') }}#add_labels"
                            style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
                             اختصاص برچسب برای داده ها
                         </a>
@@ -56,14 +62,13 @@
 
 {% endblock %}
 
+
 {% block content %}
     <div class="halves" style="max-width: 100%">
-        <div class="half_right input-box" style="max-width: 75%">
-
+        <div class="half_right input-box" style="max-width: 70%">
             <h2 class="title">مدیریت پایگاه داده</h2>
 
-
-            <form action="{{ url_for('admin_db_management') }}" method="post" onsubmit="updateThresholdHiddenField()"
+            <form action="{{ url_for('supervisor') }}" method="post" onsubmit="updateThresholdHiddenField()"
                   class="input-box">
                 <h5 id="conflict_search" style="margin-top: 40px">رفع تناقض در برچسب ها</h5>
                 {{ conflict_search_form.hidden_tag() }}
@@ -121,7 +126,7 @@
                         </tr>
                         </tbody>
                     </table>
-                    <form action="{{ url_for('admin_db_management') }}" method="post">
+                    <form action="{{ url_for('supervisor') }}" method="post">
                         {{ conflict_search_form.hidden_tag() }}
                         <p>برچسب مناسب را انتخاب کنید: </p>
                         <input type="hidden" name="row_id" value="{{ conflict_row['_id'] }}">
@@ -151,12 +156,11 @@
                 </div>
                 <div style="display: flex; align-items: center; width: 100%;">
                     {{ add_average_label_form.data_collection(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
-                    {{ add_average_label_form.set_average_label(class="btn btn-success", style="width:38%; margin-top: 10px") }}
+                    {{ add_average_label_form.set_average_label(class="btn btn-success", style="width:38%;") }}
                 </div>
             </form>
 
-
-            <h5 id="extract_data" style="margin-top: 80px">استخراج پایگاه داده</h5>
+            <h5 id="extract_data" style="margin-top: 70px">استخراج پایگاه داده</h5>
             <form action="{{ url_for('extract_db') }}" method="post" style="margin-right: 20px">
                 <label for="collection_name" style="white-space: nowrap; margin-top: 10px">
                     مجموعه مورد نظر را انتخاب کنید:
@@ -170,13 +174,14 @@
 
             {% if extracted %}
                 <div style="display: flex; justify-content: flex-end; margin-top: 20px; margin-right: 20px;">
-                    <a href="{{ url_for('download_file', collection_name=collection_name) }}"
+                    <a href="{{ url_for('download_file', collection_name=selected_collection) }}"
                        class="btn btn-success"
                        style="background:#37c9da; width: 38%;">دانلود پایگاه داده استخراج شده.</a>
                 </div>
             {% endif %}
 
-            <h5 id="add_data" style="margin-top: 80px">درج یک مجموعه داده</h5>
+
+            <h5 id="add_data" style="margin-top: 60px">درج مجموعه داده جدید</h5>
             <form action="{{ url_for('import_db') }}" method="post" enctype="multipart/form-data"
                   style="margin-right: 20px">
                 {{ import_db_form.hidden_tag() }}
@@ -187,110 +192,39 @@
                     {{ import_db_form.file(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
                     {{ import_db_form.submit(class="btn btn-success", style="width:38%;") }}
                 </div>
+
             </form>
 
-            <h5 id="add_labels" style="margin-top: 80px">اختصاص برچسب برای داده ها</h5>
+
+            <h5 id="add_labels" style="margin-top: 80px;">اختصاص برچسب برای داده ها</h5>
             <form action="{{ url_for('admin_db_management') }}" method="post" id="optionForm"
-                  onsubmit="updateHiddenField()"
-                  style="margin-right: 20px">
-                {{ set_data_config_form.hidden_tag() }}
-                <div class="form-group" style="display: flex; align-items: center; width: 100%; margin-top: 10px ">
-                    <label for="collection_name" style="width:62%; flex-grow: 1; margin-left: 10px;">مجموعه داده مورد نظر را انتخاب کنید:</label>
-                    {{ set_data_config_form.data_collection(class="form-control",  style="width:38%;") }}
+                  onsubmit="updateHiddenField()" style="margin-right: 20px;">
+                {{ admin_label_config_form.hidden_tag() }}
+                <div class="form-group">
+                    <label for="collection_name">مجموعه داده مورد نظر را انتخاب کنید:</label>
+                    {{ admin_label_config_form.data_collection(class="form-control") }}
                 </div>
-                <div style="display: flex; align-items: center; width: 100%;margin-top: 10px">
-                    {{ set_data_config_form.num_required_labels.label(style="width:62%; flex-grow: 1; margin-left: 10px;") }}
-                    {{ set_data_config_form.num_required_labels(class='form-control', style="width:38%;") }}
-                </div>
-                {{ set_data_config_form.labels(id='stringfield') }}  <!-- Add the hidden field here -->
-                <div style="display: flex; align-items: center; width: 100%; margin-top: 10px">
-                    {{ set_data_config_form.new_option.label(style="width:40%; padding-top: 5px") }}
-                    {{ set_data_config_form.new_option(class="form-control", style="margin-right: 10px; width:41%;", size=10) }}
-                    <button type="button" onclick="addOption()" class="btn btn-success" style="width:19%; margin-right: 10px;">افزودن
+                {{ admin_label_config_form.labels(id='stringfield') }}  <!-- Add the hidden field here -->
+                <div class="input-group" style=" margin-top: 10px">
+                    {{ admin_label_config_form.new_option.label(style="margin-right: 10px; padding-top: 5px") }}
+                    {{ admin_label_config_form.new_option(class="form-control", style="margin-right: 10px", size=20) }}
+                    <button type="button" onclick="addOption()" class="btn btn-success"
+                            style="margin-right: 2px;">افزودن
                     </button>
                 </div>
-                <div style="display: flex; align-items: center; width: 100%; margin: 10px 0 50px 0">
+                <div class="input-group" style="display: flex; align-items: center; width: 100%; margin: 10px 0 50px 0">
                     <select class="form-control" id="dynamicSelect" name="dynamicSelect"
                             style="flex-grow: 1;margin-left: 10px; border: 1px solid #ccc;">
                         <option value="" disabled selected>اینجا برچسب های مورد نظر می باشند</option>
                     </select>
-                    <button type="submit" name="save_labels" class="btn btn-danger"
-                            style="white-space: nowrap;">
+                    <button type="submit" name="save_labels" class="btn btn-danger">
                         افزودن این برچسب ها
                     </button>
                 </div>
             </form>
-
-            <script src="{{ url_for('static', filename='js/admin_db.js') }}"></script>
-            <script>
-                function updateThresholdHiddenField() {
-                    var rangeInput = document.getElementById('threshold');
-                    var hiddenInput = document.getElementById('hiddenThreshold');
-                    hiddenInput.value = rangeInput.value;
-                }
-            </script>
         </div>
         <div class="half_left" style="max-width: 30%">
             <img src="/static/images/left-side4.jpg">
         </div>
-    </div>
-{% endblock %}
-
-{% block left_sidebar %}
-    <div style="flex: 0 0 20%; background-color:var(--sidebar-color); border-radius: 10px 0 0 10px">
-        <nav class="navbar navbar-expand-lg navbar-dark p-0"
-             style="background-color: var(--sidebar-color); margin-top: 20px; position: sticky; top: 25px; z-index: 1000;">
-            <div class="container-fluid d-flex flex-column justify-content-start align-items-stretch p-0">
-                <ul class="navbar-nav flex-column w-100" style="padding-inline-start: 0;">
-                    <!-- new data -->
-                    {% if data_states['unlabeled'] %}
-                        <li class="nav-item w-100">
-                            <div style="margin-bottom: 20px">
-                                <option style="background-color: #2D4463; color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 5px; border: 1px solid #000000;">
-                                    داده های جدید:
-                                </option>
-                                <ul style="list-style: none; padding: 0; margin: 0;">
-                                    {% for data in data_states['unlabeled'] %}
-                                        <li style="padding: 5px; margin: 5px 0 5px 0; text-align: center; background-color: rgba(45,68,99,0.7); color: #000000;">{{ data }}</li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                        </li>
-                    {% endif %}
-
-                    <!-- are labeling data -->
-                    {% if data_states['labeling'] %}
-                        <li class="nav-item w-100">
-                            <div style="margin-bottom: 20px">
-                                <option style="background-color: #8A3463; color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 5px; border: 1px solid #000000;">
-                                    داده های در حال برچسب گذاری:
-                                </option>
-                                <ul style="list-style: none; padding: 0; margin: 0;">
-                                    {% for data in data_states['labeling'] %}
-                                        <li style="padding: 5px;  margin: 5px 0 5px 0; text-align: center; background-color: rgba(138,52,99,0.7); color: black;">{{ data }}</li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                        </li>
-                    {% endif %}
-
-                    <!-- labeled data -->
-                    {% if data_states['labeled'] %}
-                        <li class="nav-item w-100">
-                            <div style="margin-bottom: 20px">
-                                <option style="background-color: #BC4347; color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 5px;  border: 1px solid #000000;">
-                                    داده های برچسب خورده:
-                                </option>
-                                <ul style="list-style: none; padding: 0; margin: 0;">
-                                    {% for data in data_states['labeled'] %}
-                                        <li style="padding: 5px;  margin: 5px 0 5px 0; text-align: center; background-color: rgba(188,67,71,0.7); color: black;">{{ data }}</li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                        </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </nav>
     </div>
 {% endblock %}

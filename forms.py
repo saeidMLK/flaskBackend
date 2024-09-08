@@ -1,6 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, FileField, HiddenField, RadioField
-from wtforms.validators import DataRequired, Email, EqualTo, InputRequired
+from wtforms.fields.numeric import IntegerField
+from wtforms.validators import DataRequired, Email, EqualTo, InputRequired, NumberRange
 from wtforms.fields import SelectField
 from wtforms.widgets import ListWidget, CheckboxInput
 
@@ -20,7 +21,7 @@ class SignUpForm(FlaskForm):
     username = StringField('نام کاربری', validators=[DataRequired()])
     password = PasswordField('کلمه عبور', validators=[DataRequired()])
     confirm_password = PasswordField('تکرار کلمه عبور', validators=[DataRequired(), EqualTo('password')])
-    role = SelectField('نقش', choices=[('user', 'User'), ('admin', 'Admin')], validators=[DataRequired()])
+    role = SelectField('نقش', choices=[('user', 'User'), ('supervisor', 'Supervisor'), ('admin', 'Admin')], validators=[DataRequired()])
     submit = SubmitField('ایجاد کاربر')
 
     def set_collections_choices(self):
@@ -37,9 +38,10 @@ class ExtractDBForm(FlaskForm):
     collection_name = SelectField('نام دسته بندی', choices=models.get_db_collection_names(1), validators=[DataRequired()])
     submit = SubmitField('استخراج پایگاه داده')
 
-    def set_collections_choices(self):
-        choices = models.get_db_collection_names(1)
+    def set_collections_choices(self, sys_collections_included):
+        choices = models.get_db_collection_names(sys_collections_included=1)
         self.collection_name.choices = choices
+
 
 class ImportDBForm(FlaskForm):
     # collection_name = SelectField('نام مجموعه', choices=models.get_db_collection_names(), validators=[DataRequired()])
@@ -67,6 +69,7 @@ class AddLabelForm(FlaskForm):
 
 class ReportTaskForm(FlaskForm):
     username = SelectField('نام کاربری', validators=[DataRequired()], coerce=str)
+    collection = SelectField('مجموعه داده', validators=[DataRequired()])
 
 
 class ConflictSearchForm(FlaskForm):
@@ -88,9 +91,11 @@ class LabelForm(FlaskForm):
     label = StringField('برچسب', validators=[DataRequired()])
 
 
-class AdminLabelConfigForm(FlaskForm):
+class SetDataConfigForm(FlaskForm):
     data_collection = SelectField('مجموعه داده مورد نظر را انتخاب کنید:', choices=get_db_collection_names(), validators=[DataRequired()])
     labels = StringField('برچسب', validators=[DataRequired()], render_kw={"type": "hidden"})
+    num_required_labels = IntegerField('تعداد برچسب‌ها مورد نیاز برای داده:', default=1, validators=[InputRequired(),
+                                  NumberRange(min=1, message="تعداد برچسب‌های پیش فرض ۱ است.")])
     new_option = StringField('افزودن برچسب جدید: ')
     add_button = SubmitField('افزودن')
 
@@ -98,3 +103,4 @@ class AdminLabelConfigForm(FlaskForm):
 class AddAverageLabelForm(FlaskForm):
     data_collection = SelectField('مجموعه داده مورد نظر را انتخاب کنید:', choices=get_db_collection_names(), validators=[DataRequired()])
     set_average_label = SubmitField('افزودن برچسب تجمعی')
+

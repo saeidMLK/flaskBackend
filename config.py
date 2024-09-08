@@ -10,6 +10,7 @@ load_dotenv()
 class ConfigDB():
     MONGODB_URI = os.getenv('MONGODB_URI')
     MONGO_DBNAME = os.getenv('MONGO_DBNAME')
+
     @classmethod
     def get_data_labels(cls, data_collection):
         client = MongoClient(ConfigDB.MONGODB_URI)
@@ -27,11 +28,24 @@ class ConfigDB():
         config_collection = db.config
         if config_collection.find_one({"collection": data_collection}):
             return config_collection.update_one(
-                    {"collection": data_collection},
-                    {"$set": {"labels": new_labels}})
+                {"collection": data_collection},
+                {"$set": {"labels": new_labels}})
         else:
             return config_collection.insert_one({"collection": data_collection,
-                                                "labels": new_labels})
+                                                 "labels": new_labels})
+
+    @classmethod
+    def set_num_required_labels(cls, data_collection, num_required_labels):
+        client = MongoClient(ConfigDB.MONGODB_URI)
+        db = client[ConfigDB.MONGO_DBNAME]
+        config_collection = db.config
+        if config_collection.find_one({"collection": data_collection}):
+            return config_collection.update_one(
+                {"collection": data_collection},
+                {"$set": {"num_required_labels": num_required_labels}})
+        else:
+            return config_collection.insert_one({"collection": data_collection,
+                                                 "num_required_labels": num_required_labels})
 
 
 class ConfigApp:
@@ -43,4 +57,3 @@ class ConfigApp:
     WTF_CSRF_SECRET_KEY = os.getenv('WTF_CSRF_SECRET_KEY')
     # cert = 'localhost.crt'
     # key = 'localhost.key'
-

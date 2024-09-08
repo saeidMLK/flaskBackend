@@ -19,7 +19,7 @@
     display: flex;
     justify-content: center;
     align-items: stretch; /* Ensure both halves stretch to the same height */
-    max-width: 75%; /* Example max-width to limit overall container width */
+    max-width: 85%; /* Example max-width to limit overall container width */
     margin: 0 auto; /* Center container horizontally */
     padding-bottom: 20px;
 }

@@ -9,7 +9,7 @@
 
 {% block content %}
     <div class="halves">
-        <div class="half_right input-box">
+        <div class="half_right input-box"  style="max-width: 55%">
             <h1 style="padding-bottom: 20px">ایجاد کاربر</h1>
             <form method="post">
                 {{ form.hidden_tag() }}
@@ -51,7 +51,7 @@
                 {{ form.submit(class="btn btn-success") }}
             </form>
         </div>
-        <div class="half_left">
+        <div class="half_left"  style="max-width: 45%">
             <img src="/static/images/login.png" alt="Your Image">
         </div>
     </div>

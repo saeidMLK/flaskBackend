@@ -48,3 +48,4 @@ def clear_old_captchas():
 
 
 # captcha_text, captcha_path = generate_captcha()
+

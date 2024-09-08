@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
 from bson.objectid import ObjectId
@@ -49,6 +51,11 @@ def get_all_users():
     user_docs = users_collection.find()
     users = [User.from_document(doc) for doc in user_docs]
     return users
+
+
+def get_user_role(user_name):
+    user = users_collection.find_one({'username': user_name})
+    return user['role'] if user else None
 
 
 def remove_user_by_name(username):
@@ -135,6 +142,15 @@ def get_user_collection(username):
         return None
 
 
+def get_collection_users(collection_name):
+    user_docs = db.users.find({'collections': collection_name})
+    users = [User.from_document(doc) for doc in user_docs]
+    if users:
+        return users
+    else:
+        return None
+
+
 def read_one_row_of_data(username, collection_name):
     # collection_name = get_user_collection(username)
     collection = db[collection_name]
@@ -159,10 +175,10 @@ def add_label_to_data(row_id, label, username, collection_name):
     return result.modified_count == 1
 
 
-def get_user_performance(username):
+def get_user_performance(username, collection_name):
     number_of_labels = 0
     total_consensus_degree = 0
-    collection_name = get_user_collection(username)
+    # collection_name = get_user_collection(username)
     collection = db[collection_name]
     total_rows = collection.count_documents({})  # Get the total number of rows in the collection
     for row in collection.find():
@@ -186,18 +202,17 @@ def get_user_performance(username):
         consensus_degree = 0
         label_percentage = 0
 
-
     return number_of_labels, consensus_degree, label_percentage
 
 
-def get_user_labels(username, page, per_page=10):
-    collection_name = get_user_collection(username)
+def get_user_labels(username, collection_name, page, per_page=10):
+    # collection_name = get_user_collection(username)
     collection = db[collection_name]
     # Skip and limit for pagination
     skip = (page - 1) * per_page
     rows_cursor = collection.find({f"label.{username}": {"$exists": True}}).skip(skip).limit(per_page)
     rows = [{"row": row.get('data'), "answer": row.get('label')} for row in rows_cursor]
-    total_rows = get_user_performance(username)[0]
+    total_rows = get_user_performance(username, collection_name)[0]
     return rows, total_rows
 
 
@@ -227,10 +242,12 @@ def set_admin_label_for_conflicts(collection_name, row_id, label):
     return result.modified_count == 1
 
 
-def set_admin_label_config(data_collection, labels):
+def set_data_configs(data_collection, labels, num_required_labels):
     # Convert the string to a Python list
     array_of_labels = json.loads(labels)
-    return ConfigDB.update_data_labels(data_collection, array_of_labels)
+    ConfigDB.update_data_labels(data_collection, array_of_labels)
+    return ConfigDB.set_num_required_labels(data_collection, num_required_labels)
+
 
 
 def calculate_and_set_average_label(collection_name):
@@ -285,3 +302,92 @@ def update_label(row_id, username, new_label_value, collection_name):
 
 def get_label_options(collection_name):
     return ConfigDB.get_data_labels(collection_name)
+
+
+def get_top_users(k=3):
+    collections = get_db_collection_names(0)
+    if collections is None:
+        collections = []
+    users = get_all_users()
+    categorized_users = defaultdict(list)
+
+    for user in users:
+        categorized_users[user.role].append(user.username)
+
+    user_data = defaultdict(lambda: {'total_labels': 0, 'total_consensus': 0, 'collections_count': 0})  # To store data for each user
+
+    if categorized_users['user']:
+        for collection in collections:
+            for user in categorized_users['user']:
+                user_performance = get_user_performance(user, collection)
+                # Check if user_performance is valid before proceeding
+                if user_performance:
+                    number_of_labels = user_performance[0]
+                    consensus_degree = user_performance[1]
+                    # Add user data (username, number_of_labels, consensus_degree)
+                    # Update total labels and consensus for this user
+                    user_data[user]['total_labels'] += number_of_labels
+                    user_data[user]['total_consensus'] += consensus_degree
+                    user_data[user]['collections_count'] += 1
+                else:
+                    continue
+
+        # Now calculate the F-score based on total_labels and average_consensus for each user
+    ranked_users = []
+
+    for user, data in user_data.items():
+        total_labels = data['total_labels']
+        collections_count = data['collections_count']
+
+        # Calculate the average consensus degree
+        if collections_count > 0:
+            avg_consensus = data['total_consensus'] / collections_count
+        else:
+            avg_consensus = 0
+
+        # Calculate F-score using total_labels and avg_consensus
+        if total_labels + avg_consensus > 0:
+            f_score = 2 * (total_labels * avg_consensus) / (total_labels + avg_consensus)
+        else:
+            f_score = 0
+
+        ranked_users.append({
+            'username': user,
+            'total_labels': total_labels,
+            'avg_consensus': avg_consensus,
+            'f_score': f_score
+        })
+
+    # Sort users based on F-score in descending order
+    ranked_users = sorted(ranked_users, key=lambda x: x['f_score'], reverse=True)
+
+    if len(categorized_users['user']) < k:
+        return ranked_users[:len(categorized_users['user'])]
+    else:
+        return ranked_users[:k]
+
+
+def set_data_state(collection_name):
+    collection = db['config'].find_one({'collection': collection_name})
+    num_required_labels = collection['num_required_labels']
+    print(num_required_labels)
+    num_labels = collection['num_labels']
+    print(num_labels)
+    if num_labels < 1 or num_labels == None:
+        state = 'unlabeled'
+    elif num_labels < num_required_labels:
+        state = 'labeling'
+    else:
+        state = 'labeled'
+    db['config'].update_one({'collection': collection_name}, {'$set': {'state': state}})
+    return state
+
+
+def get_data_states():
+    collections = get_db_collection_names(0)
+    data_and_states = defaultdict(list)
+    for collection in collections:
+        collection_row = db['config'].find_one({"collection": collection})
+        state = collection_row['state']
+        data_and_states[state].append(collection)
+    return data_and_states
