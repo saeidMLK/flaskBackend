@@ -18,7 +18,7 @@ from models import find_user, add_user, check_password, find_user_by_id, remove_
     set_admin_label_for_conflicts, set_data_configs, import_db_collection, convert_oid, \
     rename_collection_if_exist, get_user_labels, get_db_collection_names, get_user_collection, \
     calculate_and_set_average_label, get_recent_labels, update_label, get_label_options, get_collection_users, \
-    get_user_role, get_top_users, get_data_states
+    get_user_role, get_top_users, get_data_states, set_data_state
 from extensions import sanitize_input, generate_captcha, clear_old_captchas  # , limiter
 
 app = Flask(__name__)
@@ -328,14 +328,12 @@ def admin_db_management():
                 labels = set_data_config_form.labels.data
                 data_collection = set_data_config_form.data_collection.data
                 num_required_labels = set_data_config_form.num_required_labels.data
-
                 if set_data_configs(data_collection, labels, num_required_labels):
                     flash('تنظیمات داده با موفقیت بروزرسانی شدند.', 'success')
                 else:
                     flash('Failed to update data config.', 'danger')
             else:
                 flash('Failed to update data config. Form is not validate_on_submit', 'danger')
-
     data_states = get_data_states()
 
     return render_template('access/admin/admin_db_management.html',
@@ -540,14 +538,16 @@ def add_label():
 def supervisor():
     import_db_form = ImportDBForm()
     extract_db_form = ExtractDBForm()
-    admin_label_config_form = SetDataConfigForm()
+    # admin_label_config_form = SetDataConfigForm()
     add_average_label_form = AddAverageLabelForm()
     conflict_search_form = ConflictSearchForm()
+    set_data_config_form = SetDataConfigForm()
     # collection_names_0 = get_db_collection_names(sys_collections_included=0)
     collections = get_user_collection(current_user.username)
     extract_db_form.collection_name.choices = [(name, name) for name in collections]
     add_average_label_form.data_collection.choices = [(name, name) for name in collections]
     conflict_search_form.data_collection.choices = [(name, name) for name in collections]
+    set_data_config_form.data_collection.choices = [(name, name) for name in collections]
     # extract_db_form.collection_name = collections
     extracted = request.args.get('extracted', False)
     selected_collection = request.args.get('collection_name', collections[0])
@@ -586,15 +586,19 @@ def supervisor():
                 flash('Form validation failed.', 'danger')
 
         elif 'save_labels' in request.form:
-            if admin_label_config_form.validate_on_submit():
-                labels = admin_label_config_form.labels.data
-                data_collection = admin_label_config_form.data_collection.data
-                if set_data_configs(data_collection, labels):
-                    flash('برچسب ها با موفقیت بروزرسانی شدند.', 'success')
+            print(set_data_config_form.validate_on_submit())
+            if set_data_config_form.validate_on_submit():
+                labels = set_data_config_form.labels.data
+                data_collection = set_data_config_form.data_collection.data
+                num_required_labels = set_data_config_form.num_required_labels.data
+                if set_data_configs(data_collection, labels, num_required_labels):
+                    flash('تنظیمات داده با موفقیت بروزرسانی شدند.', 'success')
                 else:
-                    flash('Failed to update labels.', 'danger')
+                    flash('Failed to update data config.', 'danger')
             else:
-                flash('Failed to update labels. Form is not validate_on_submit', 'danger')
+                flash('Failed to update data config. Form is not validate_on_submit', 'danger')
+    # data_states = get_data_states()
+
 
     return render_template('access/supervisor/supervisor.html',
                            supervisor_collections=collections,
@@ -602,9 +606,10 @@ def supervisor():
                            import_db_form=import_db_form,
                            extract_db_form=extract_db_form,
                            extracted=extracted,
-                           admin_label_config_form=admin_label_config_form,
+                           # admin_label_config_form=admin_label_config_form,
                            add_average_label_form=add_average_label_form,
                            conflict_search_form=conflict_search_form,
+                           set_data_config_form=set_data_config_form,
                            threshold=threshold,
                            conflict_row=conflict_row)
 

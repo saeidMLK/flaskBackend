@@ -192,36 +192,43 @@
                     {{ import_db_form.file(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
                     {{ import_db_form.submit(class="btn btn-success", style="width:38%;") }}
                 </div>
-
             </form>
 
-
-            <h5 id="add_labels" style="margin-top: 80px;">اختصاص برچسب برای داده ها</h5>
-            <form action="{{ url_for('admin_db_management') }}" method="post" id="optionForm"
-                  onsubmit="updateHiddenField()" style="margin-right: 20px;">
-                {{ admin_label_config_form.hidden_tag() }}
-                <div class="form-group">
-                    <label for="collection_name">مجموعه داده مورد نظر را انتخاب کنید:</label>
-                    {{ admin_label_config_form.data_collection(class="form-control") }}
+            <h5 id="add_labels" style="margin-top: 80px">اختصاص برچسب برای داده ها</h5>
+            <form action="{{ url_for('supervisor') }}" method="post" id="optionForm"
+                  onsubmit="updateHiddenField()" style="margin-right: 20px">
+                {{ set_data_config_form.hidden_tag() }}
+                <div class="form-group" style="display: flex; align-items: center; width: 100%; margin-top: 10px ">
+                    <label for="collection_name" style="width:62%; flex-grow: 1; margin-left: 10px;">مجموعه داده مورد
+                        نظر را انتخاب کنید:</label>
+                    {{ set_data_config_form.data_collection(class="form-control",  style="width:38%;") }}
                 </div>
-                {{ admin_label_config_form.labels(id='stringfield') }}  <!-- Add the hidden field here -->
-                <div class="input-group" style=" margin-top: 10px">
-                    {{ admin_label_config_form.new_option.label(style="margin-right: 10px; padding-top: 5px") }}
-                    {{ admin_label_config_form.new_option(class="form-control", style="margin-right: 10px", size=20) }}
+                <div style="display: flex; align-items: center; width: 100%;margin-top: 10px">
+                    {{ set_data_config_form.num_required_labels.label(style="width:62%; flex-grow: 1; margin-left: 10px;") }}
+                    <div>تعداد افراد برچسب گذار</div>
+                    {{ set_data_config_form.num_required_labels(class='form-control', style="width:38%;") }}
+                </div>
+                {{ set_data_config_form.labels(id='stringfield') }}  <!-- Add the hidden field here -->
+                <div style="display: flex; align-items: center; width: 100%; margin-top: 10px">
+                    {{ set_data_config_form.new_option.label(style="width:40%; padding-top: 5px") }}
+                    {{ set_data_config_form.new_option(class="form-control", style="margin-right: 10px; width:41%;", size=10) }}
                     <button type="button" onclick="addOption()" class="btn btn-success"
-                            style="margin-right: 2px;">افزودن
+                            style="width:19%; margin-right: 10px;">افزودن
                     </button>
                 </div>
-                <div class="input-group" style="display: flex; align-items: center; width: 100%; margin: 10px 0 50px 0">
+                <div style="display: flex; align-items: center; width: 100%; margin: 10px 0 50px 0">
                     <select class="form-control" id="dynamicSelect" name="dynamicSelect"
                             style="flex-grow: 1;margin-left: 10px; border: 1px solid #ccc;">
                         <option value="" disabled selected>اینجا برچسب های مورد نظر می باشند</option>
                     </select>
-                    <button type="submit" name="save_labels" class="btn btn-danger">
+                    <button type="submit" name="save_labels" class="btn btn-danger"
+                            style="white-space: nowrap;">
                         افزودن این برچسب ها
                     </button>
                 </div>
             </form>
+            <script src="{{ url_for('static', filename='js/admin_db.js') }}"></script>
+
         </div>
         <div class="half_left" style="max-width: 30%">
             <img src="/static/images/left-side4.jpg">

@@ -246,6 +246,7 @@ def set_data_configs(data_collection, labels, num_required_labels):
     # Convert the string to a Python list
     array_of_labels = json.loads(labels)
     ConfigDB.update_data_labels(data_collection, array_of_labels)
+    set_data_state(data_collection)
     return ConfigDB.set_num_required_labels(data_collection, num_required_labels)
 
 
@@ -390,4 +391,5 @@ def get_data_states():
         collection_row = db['config'].find_one({"collection": collection})
         state = collection_row['state']
         data_and_states[state].append(collection)
+    print("run")
     return data_and_states

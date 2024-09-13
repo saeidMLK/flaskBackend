@@ -191,8 +191,7 @@
 
             <h5 id="add_labels" style="margin-top: 80px">اختصاص برچسب برای داده ها</h5>
             <form action="{{ url_for('admin_db_management') }}" method="post" id="optionForm"
-                  onsubmit="updateHiddenField()"
-                  style="margin-right: 20px">
+                  onsubmit="updateHiddenField()" style="margin-right: 20px">
                 {{ set_data_config_form.hidden_tag() }}
                 <div class="form-group" style="display: flex; align-items: center; width: 100%; margin-top: 10px ">
                     <label for="collection_name" style="width:62%; flex-grow: 1; margin-left: 10px;">مجموعه داده مورد نظر را انتخاب کنید:</label>
