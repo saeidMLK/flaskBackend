@@ -334,7 +334,7 @@ def admin_db_management():
                     flash('Failed to update data config.', 'danger')
             else:
                 flash('Failed to update data config. Form is not validate_on_submit', 'danger')
-    data_states = get_data_states()
+    data_states = get_data_states('admin')
 
     return render_template('access/admin/admin_db_management.html',
                            conflict_search_form=conflict_search_form,
@@ -597,7 +597,7 @@ def supervisor():
                     flash('Failed to update data config.', 'danger')
             else:
                 flash('Failed to update data config. Form is not validate_on_submit', 'danger')
-    # data_states = get_data_states()
+    data_states = get_data_states(current_user.username)
 
 
     return render_template('access/supervisor/supervisor.html',
@@ -611,7 +611,8 @@ def supervisor():
                            conflict_search_form=conflict_search_form,
                            set_data_config_form=set_data_config_form,
                            threshold=threshold,
-                           conflict_row=conflict_row)
+                           conflict_row=conflict_row,
+                           data_states=data_states)
 
 
 if __name__ == '__main__':

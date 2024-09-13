@@ -384,8 +384,12 @@ def set_data_state(collection_name):
     return state
 
 
-def get_data_states():
-    collections = get_db_collection_names(0)
+def get_data_states(user):
+    if user == 'admin':
+        collections = get_db_collection_names(0)
+    else:
+        collections = get_user_collection(user)
+
     data_and_states = defaultdict(list)
     for collection in collections:
         collection_row = db['config'].find_one({"collection": collection})
