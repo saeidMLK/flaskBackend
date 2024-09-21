@@ -550,7 +550,10 @@ def supervisor():
     set_data_config_form.data_collection.choices = [(name, name) for name in collections]
     # extract_db_form.collection_name = collections
     extracted = request.args.get('extracted', False)
-    selected_collection = request.args.get('collection_name', collections[0])
+    if collections:
+        selected_collection = request.args.get('collection_name', collections[0])
+    else:
+        selected_collection = []
     conflict_row = None
     threshold = 0.7  # Default value
     if request.method == 'POST':

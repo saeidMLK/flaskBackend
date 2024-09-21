@@ -1,8 +1,13 @@
-[{
-  "collection": "data",
-  "labels": [
-    "هنری",
-    "اقتصادی",
-    "ورزشی"
-  ]
-}]
+[
+  {
+    "collection": "data",
+    "labels": [
+      "هنری",
+      "اقتصادی",
+      "ورزشی"
+    ],
+    "num_required_labels": 3,
+    "num_labels": 1,
+    "state": "labeling"
+  }
+]
