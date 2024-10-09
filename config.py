@@ -55,5 +55,6 @@ class ConfigApp:
     CORS_ORIGINS = "*"
     SECRET_KEY = os.getenv('SECRET_KEY')
     WTF_CSRF_SECRET_KEY = os.getenv('WTF_CSRF_SECRET_KEY')
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
     # cert = 'localhost.crt'
     # key = 'localhost.key'

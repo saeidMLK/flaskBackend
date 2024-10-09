@@ -2,7 +2,6 @@ import json
 import math
 import os
 from collections import defaultdict
-
 import bson
 from config import ConfigApp
 from flask_cors import CORS
@@ -20,21 +19,29 @@ from models import find_user, add_user, check_password, find_user_by_id, remove_
     calculate_and_set_average_label, get_recent_labels, update_label, get_label_options, get_collection_users, \
     get_user_role, get_top_users, get_data_states, set_data_state
 from extensions import sanitize_input, generate_captcha, clear_old_captchas  # , limiter
+# Import the api.py to include API routes
+import api
+from extensions import csrf, login_manager  # Import CSRF and login manager from extensions.py
+
 
 app = Flask(__name__)
 app.config.from_object(ConfigApp)
 CORS(app, resources={r"/*": {"origins": ConfigApp.CORS_ORIGINS}}, supports_credentials=True)
-csrf = CSRFProtect(app)  # to prevent CSRF attacks
+# csrf = CSRFProtect(app)  # to prevent CSRF attacks
+csrf.init_app(app)  # Initialize CSRF protection with the app
 # limiter.init_app(app)
 
 # app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
 # jwt = JWTManager(app)
 
 # Initialize Flask-Login
-login_manager = LoginManager()
+# login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+# Import Blueprints and register them
+from api import api_bp  # Import the blueprint from api.py
+app.register_blueprint(api_bp)  # Register the blueprint
 
 @login_manager.user_loader
 def load_user(user_id):

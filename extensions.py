@@ -19,6 +19,17 @@ import os
 # )
 
 
+# to avoid ImportError: cannot import name 'csrf' from partially initialized module 'app' (most likely due to a circular import) with aip.py
+from flask_wtf.csrf import CSRFProtect
+from flask_login import LoginManager
+
+csrf = CSRFProtect()  # CSRF protection
+login_manager = LoginManager()  # Flask-Login manager
+
+
+
+
+
 def sanitize_input(input_str):
     # Remove MongoDB query operators
     sanitized_str = re.sub(r'\$|\.', '', input_str)
