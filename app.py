@@ -426,7 +426,7 @@ def import_db():
             if file_name in get_db_collection_names(sys_collections_included=1):
                 flash(f'این مجموعه داده از قبل وجود دارد.', 'warning')
             else:
-                import_db_collection(file_name, data)
+                import_db_collection(current_user.username, file_name, data)
                 flash(f'مجموعه داده {file_name} با موفقیت به دیتابیس اضافه شد.', 'success')
         except Exception as e:
             flash(f'بارگذاری ناموفق: {e}', 'danger')

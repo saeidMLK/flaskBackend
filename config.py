@@ -47,6 +47,19 @@ class ConfigDB():
             return config_collection.insert_one({"collection": data_collection,
                                                  "num_required_labels": num_required_labels})
 
+    @classmethod
+    def set_num_labels(cls, data_collection, num_labels):
+        client = MongoClient(ConfigDB.MONGODB_URI)
+        db = client[ConfigDB.MONGO_DBNAME]
+        config_collection = db.config
+        if config_collection.find_one({"collection": data_collection}):
+            return config_collection.update_one(
+                {"collection": data_collection},
+                {"$set": {"num_labels": num_labels}})
+        else:
+            return config_collection.insert_one({"collection": data_collection,
+                                                 "num_labels": num_labels})
+
 
 class ConfigApp:
     SESSION_COOKIE_SECURE = False

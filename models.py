@@ -1,5 +1,4 @@
 from collections import defaultdict
-
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
 from bson.objectid import ObjectId
@@ -128,9 +127,21 @@ def rename_collection_if_exist(collection_name):
     return False
 
 
-def import_db_collection(collection_name, data):
+def import_db_collection(username, collection_name, data):
+    # Update the user's collections in the "users" collection
+    db.users.update_one(
+        {'username': username},
+        {'$addToSet': {'collections': collection_name}}  # Add the collection name if it's not already present, add collaction name in user profile
+    )
+    # Add dataset to db
     data = convert_oid(data)
-    return db[collection_name].insert_many(data)
+    db[collection_name].insert_many(data)
+
+    # Set initial configs for new dataset
+    ConfigDB.update_data_labels(collection_name, [])
+    ConfigDB.set_num_labels(collection_name, 0)
+    ConfigDB.set_num_required_labels(collection_name, 1)
+    return set_data_state(collection_name)
 
 
 def get_user_collection(username):
@@ -248,7 +259,6 @@ def set_data_configs(data_collection, labels, num_required_labels):
     ConfigDB.update_data_labels(data_collection, array_of_labels)
     set_data_state(data_collection)
     return ConfigDB.set_num_required_labels(data_collection, num_required_labels)
-
 
 
 def calculate_and_set_average_label(collection_name):
@@ -371,9 +381,7 @@ def get_top_users(k=3):
 def set_data_state(collection_name):
     collection = db['config'].find_one({'collection': collection_name})
     num_required_labels = collection['num_required_labels']
-    print(num_required_labels)
     num_labels = collection['num_labels']
-    print(num_labels)
     if num_labels < 1 or num_labels == None:
         state = 'unlabeled'
     elif num_labels < num_required_labels:
@@ -395,5 +403,4 @@ def get_data_states(user):
         collection_row = db['config'].find_one({"collection": collection})
         state = collection_row['state']
         data_and_states[state].append(collection)
-    print("run")
     return data_and_states
