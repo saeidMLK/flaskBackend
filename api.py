@@ -8,6 +8,7 @@ import jwt
 from extensions import csrf
 from functools import wraps
 from models import get_user_collection, extract_db_collection, get_db_collection_names, import_db_collection, convert_oid
+import datetime
 
 
 # Define a Blueprint
@@ -28,12 +29,17 @@ def token_required(f):
             data = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
             current_user = data['user_id']
             current_username = data['username']  # Get the username from the token
-        except Exception as e:
-            return jsonify({'message': 'Token is invalid!'}), 403
+        except jwt.ExpiredSignatureError:
+            return jsonify({'message': 'Token has expired!'}), 401  # Token has expired
+        except jwt.InvalidTokenError:
+            return jsonify({'message': 'Token is invalid!'}), 403  # Invalid token
+        # Add logging to verify the token is being validated
+        # print(f'Token validated for user: {current_username}, Token expiration: {data.get("exp")}')
 
         return f(current_user, current_username, *args, **kwargs)
 
     return decorated
+
 
 
 @api_bp.route('/api/login', methods=['POST'])
@@ -48,8 +54,14 @@ def api_login():
     if user and check_password(user, password):
         login_user(user)
 
-        # Include both user_id and username in the token
-        token = jwt.encode({'user_id': str(user.id), 'username': user.username}, current_app.config['JWT_SECRET_KEY'])
+        # Set the token expiration time (e.g., 1 hour from now)
+        expiration_time = datetime.datetime.utcnow() + datetime.timedelta(hours=2)
+        # Include both user_id and username in the token along with the expiration time
+        token = jwt.encode({
+            'user_id': str(user.id),
+            'username': user.username,
+            'exp': expiration_time
+        }, current_app.config['JWT_SECRET_KEY'], algorithm="HS256")
 
         return jsonify({"message": "Login successful", "token": token}), 200
     else:
@@ -142,3 +154,25 @@ def api_set_data_configs(current_user, current_username):
         return jsonify({"error": "Invalid JSON format."}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+
+
+
+#
+# tok = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNjZkNDk0MTBjOTQ0MmExNzk1NDQ1ZjliIiwidXNlcm5hbWUiOiJ6IiwiZXhwIjoxNzI4NTAzMjM2fQ.PrRsGhg0kD8lEKbuYes6_M9fxKcTTp6AGOjtHdtinCE"
+# sec = "tPgLk1OSTWqyPFtPa1huGok2bEy8EJbaiUYF9RUBRk"
+# def decode_jwt(token=tok, secret_key=sec):
+#     try:
+#         decoded_token = jwt.decode(token, secret_key, algorithms=['HS256'])
+#         exp_timestamp = decoded_token.get('exp', None)
+#         if exp_timestamp:
+#             expiration_time = datetime.datetime.utcfromtimestamp(exp_timestamp)
+#             print(f'Token expires at: {expiration_time}')
+#         return decoded_token
+#     except jwt.ExpiredSignatureError:
+#         print("The token has expired!")
+#     except jwt.InvalidTokenError:
+#         print("Invalid token!")
+#
+# decode_jwt(token=tok, secret_key=sec)

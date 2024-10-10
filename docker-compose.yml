@@ -36,7 +36,7 @@ services:
 
 
   data-labeling-app:
-    image: data-labeling:2.3
+    image: data-labeling:3.0
     ports:
       - "4001:4001"
     depends_on:
