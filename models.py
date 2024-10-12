@@ -404,3 +404,11 @@ def get_data_states(user):
         state = collection_row['state']
         data_and_states[state].append(collection)
     return data_and_states
+
+
+def insert_data_into_collection(collection_name, data):
+    try:
+        result = db[collection_name].insert_many(data)
+        return result.inserted_ids
+    except Exception as e:
+        raise Exception(f"Error inserting data into collection {collection_name}: {str(e)}")

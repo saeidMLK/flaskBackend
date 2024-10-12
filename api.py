@@ -7,9 +7,8 @@ import os
 import jwt
 from extensions import csrf
 from functools import wraps
-from models import get_user_collection, extract_db_collection, get_db_collection_names, import_db_collection, convert_oid
+from models import get_user_collection, extract_db_collection, get_db_collection_names, import_db_collection, convert_oid, insert_data_into_collection
 import datetime
-
 
 # Define a Blueprint
 api_bp = Blueprint('api', __name__)
@@ -39,7 +38,6 @@ def token_required(f):
         return f(current_user, current_username, *args, **kwargs)
 
     return decorated
-
 
 
 @api_bp.route('/api/login', methods=['POST'])
@@ -120,7 +118,6 @@ def api_upload_file(current_user, current_username):
         return jsonify({"error": str(e)}), 500
 
 
-
 @api_bp.route('/api/supervisor/set_configs', methods=['POST'])
 @csrf.exempt  # Disable CSRF for this route
 @token_required
@@ -156,23 +153,41 @@ def api_set_data_configs(current_user, current_username):
         return jsonify({"error": str(e)}), 500
 
 
+@api_bp.route('/api/supervisor/add_data/<collection_name>', methods=['POST'])
+@csrf.exempt  # Disable CSRF for this route
+@token_required
+def api_add_data(current_user, current_username, collection_name):
+    if not collection_name:
+        return jsonify({"error": "Collection name is required"}), 400
 
+    if 'file' not in request.files:
+        return jsonify({"error": "No file provided"}), 400
 
+    file = request.files['file']
 
-#
-# tok = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNjZkNDk0MTBjOTQ0MmExNzk1NDQ1ZjliIiwidXNlcm5hbWUiOiJ6IiwiZXhwIjoxNzI4NTAzMjM2fQ.PrRsGhg0kD8lEKbuYes6_M9fxKcTTp6AGOjtHdtinCE"
-# sec = "tPgLk1OSTWqyPFtPa1huGok2bEy8EJbaiUYF9RUBRk"
-# def decode_jwt(token=tok, secret_key=sec):
-#     try:
-#         decoded_token = jwt.decode(token, secret_key, algorithms=['HS256'])
-#         exp_timestamp = decoded_token.get('exp', None)
-#         if exp_timestamp:
-#             expiration_time = datetime.datetime.utcfromtimestamp(exp_timestamp)
-#             print(f'Token expires at: {expiration_time}')
-#         return decoded_token
-#     except jwt.ExpiredSignatureError:
-#         print("The token has expired!")
-#     except jwt.InvalidTokenError:
-#         print("Invalid token!")
-#
-# decode_jwt(token=tok, secret_key=sec)
+    try:
+        # Check if the collection exists
+        if collection_name not in get_user_collection(current_username):
+            return jsonify({"error": f"Collection {collection_name} does not exist."}), 404
+
+        # Load and convert data from the uploaded file
+        data = json.load(file)
+
+        # Ensure the data is either a list or an object
+        if not isinstance(data, (dict, list)):
+            return jsonify({"error": "Uploaded file must contain a valid JSON object or an array of objects."}), 400
+
+        # If the data is a single object, wrap it in a list to maintain consistency
+        if isinstance(data, dict):
+            data = [data]
+
+        data = convert_oid(data)  # Convert ObjectId fields if necessary
+
+        # Add the new data to the collection
+        insert_data_into_collection(collection_name, data)
+
+        return jsonify({"message": f"Successfully added {len(data)} records to collection '{collection_name}'."}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
