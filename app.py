@@ -581,12 +581,14 @@ def supervisor():
     add_average_label_form = AddAverageLabelForm()
     conflict_search_form = ConflictSearchForm()
     set_data_config_form = SetDataConfigForm()
+    add_data_to_collection_form = AddDataToCollectionForm()
     # collection_names_0 = get_db_collection_names(sys_collections_included=0)
     collections = get_user_collection(current_user.username)
     extract_db_form.collection_name.choices = [(name, name) for name in collections]
     add_average_label_form.data_collection.choices = [(name, name) for name in collections]
     conflict_search_form.data_collection.choices = [(name, name) for name in collections]
     set_data_config_form.data_collection.choices = [(name, name) for name in collections]
+    add_data_to_collection_form.data_collection.choices = [(name, name) for name in collections]
     # extract_db_form.collection_name = collections
     extracted = request.args.get('extracted', False)
     if collections:
@@ -648,6 +650,7 @@ def supervisor():
                            import_db_form=import_db_form,
                            extract_db_form=extract_db_form,
                            extracted=extracted,
+                           add_data_to_collection_form=add_data_to_collection_form,
                            # admin_label_config_form=admin_label_config_form,
                            add_average_label_form=add_average_label_form,
                            conflict_search_form=conflict_search_form,

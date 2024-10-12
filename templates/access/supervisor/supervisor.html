@@ -43,6 +43,13 @@
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
+                           href="{{ url_for('admin_db_management') }}#add_to_collection"
+                           style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
+                            افزودن داده به یک مجموعه داده
+                        </a>
+                    </li>
+                    <li class="nav-item w-100">
+                        <a class="nav-link nav-link2 w-100 text-center"
                            href="{{ url_for('supervisor') }}#add_labels"
                            style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
                             اختصاص برچسب برای داده ها
@@ -191,6 +198,27 @@
                 <div style="display: flex; align-items: center; width: 100%;">
                     {{ import_db_form.file(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
                     {{ import_db_form.submit(class="btn btn-success", style="width:38%;") }}
+                </div>
+            </form>
+
+            <h5 id="add_to_collection" style="margin-top: 80px">افزودن داده به یک مجموعه داده</h5>
+            <form action="{{ url_for('add_data_to_collection') }}" method="post" enctype="multipart/form-data"
+                  style="margin-right: 20px">
+                {{ add_data_to_collection_form.hidden_tag() }}
+                <div class="form-group" style="display: flex; align-items: center; width: 100%; margin-top: 10px ">
+                    <label for="collection_name" style="width:62%; flex-grow: 1; margin-left: 10px;">
+                        {{ add_data_to_collection_form.data_collection.label }}
+                    </label>
+                    {{ add_data_to_collection_form.data_collection(class="form-control",  style="width:38%;") }}
+                </div>
+                <div class="form-group" style="padding-top:10px ">
+                    <label for="file">
+                        {{ add_data_to_collection_form.file.label }}
+                    </label>
+                </div>
+                <div style="display: flex; align-items: center; width: 100%;">
+                    {{ add_data_to_collection_form.file(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
+                    {{ add_data_to_collection_form.submit(class="btn btn-success", style="width:38%;") }}
                 </div>
             </form>
 

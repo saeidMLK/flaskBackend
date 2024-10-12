@@ -37,6 +37,13 @@
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
+                           href="{{ url_for('admin_db_management') }}#add_to_collection"
+                           style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
+                            افزودن داده به یک مجموعه داده
+                        </a>
+                    </li>
+                    <li class="nav-item w-100">
+                        <a class="nav-link nav-link2 w-100 text-center"
                            href="{{ url_for('admin_db_management') }}#add_labels"
                            style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
                             اختصاص برچسب برای داده ها
@@ -189,7 +196,7 @@
                 </div>
             </form>
 
-            <h5 id="add_data" style="margin-top: 80px">افزودن داده به یک مجموعه داده</h5>
+            <h5 id="add_to_collection" style="margin-top: 80px">افزودن داده به یک مجموعه داده</h5>
             <form action="{{ url_for('add_data_to_collection') }}" method="post" enctype="multipart/form-data"
                   style="margin-right: 20px">
                 {{ add_data_to_collection_form.hidden_tag() }}
