@@ -11,13 +11,13 @@ from bson.objectid import ObjectId
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask import Flask, render_template, redirect, url_for, flash, request, send_file, jsonify
 from forms import LoginForm, SignUpForm, RemoveUserForm, ExtractDBForm, AddLabelForm, ReadOneRowDataForm, \
-    ReportTaskForm, ConflictSearchForm, SetDataConfigForm, ImportDBForm, AddAverageLabelForm
+    ReportTaskForm, ConflictSearchForm, SetDataConfigForm, ImportDBForm, AddAverageLabelForm, AddDataToCollectionForm
 from models import find_user, add_user, check_password, find_user_by_id, remove_user_by_name, get_all_users, \
     extract_db_collection, read_one_row_of_data, add_label_to_data, get_user_performance, get_first_conflict_row, \
     set_admin_label_for_conflicts, set_data_configs, import_db_collection, convert_oid, \
     rename_collection_if_exist, get_user_labels, get_db_collection_names, get_user_collection, \
     calculate_and_set_average_label, get_recent_labels, update_label, get_label_options, get_collection_users, \
-    get_user_role, get_top_users, get_data_states, set_data_state
+    get_user_role, get_top_users, get_data_states, set_data_state, insert_data_into_collection
 from extensions import sanitize_input, generate_captcha, clear_old_captchas  # , limiter
 # Import the api.py to include API routes
 import api
@@ -287,6 +287,7 @@ def admin_db_management():
     import_db_form = ImportDBForm()
     set_data_config_form = SetDataConfigForm()
     add_average_label_form = AddAverageLabelForm()
+    add_data_to_collection_form = AddDataToCollectionForm()
     extracted = request.args.get('extracted', False)
     collection_name = request.args.get('collection_name', '')  # For downloading the collection.
 
@@ -297,6 +298,7 @@ def admin_db_management():
     extract_db_form.collection_name.choices = [(name, name) for name in collection_names_1]
     set_data_config_form.data_collection.choices = [(name, name) for name in collection_names_0]
     add_average_label_form.data_collection.choices = [(name, name) for name in collection_names_0]
+    add_data_to_collection_form.data_collection.choices = [(name, name) for name in collection_names_0]
 
     if request.method == 'POST':
         if 'search' in request.form:
@@ -351,6 +353,7 @@ def admin_db_management():
                            import_db_form=import_db_form,
                            set_data_config_form=set_data_config_form,
                            add_average_label_form=add_average_label_form,
+                           add_data_to_collection_form=add_data_to_collection_form,
                            extracted=extracted,
                            collection_name=collection_name,
                            threshold=threshold,  # Pass the threshold to the template
@@ -411,7 +414,7 @@ def download_file(collection_name):
 
 
 @app.route('/import_db', methods=['POST'])
-@role_required('supervisor', 'admin')
+@role_required( 'admin', 'supervisor')
 def import_db():
     import_db_form = ImportDBForm()
     if import_db_form.validate_on_submit():
@@ -437,6 +440,35 @@ def import_db():
             return redirect(url_for('admin_db_management'))
     else:
         flash('بارگذاری ناموفق!', 'danger')
+    if current_user.role == 'supervisor':
+        return redirect(url_for('supervisor'))
+    else:
+        return redirect(url_for('admin_db_management'))
+
+
+@app.route('/add_data_to_collection', methods=['POST'])
+@role_required('admin', 'supervisor')
+def add_data_to_collection():
+    add_data_to_collection_form = AddDataToCollectionForm()
+    if add_data_to_collection_form.validate_on_submit():
+        collection_name = add_data_to_collection_form.data_collection.data
+        file = add_data_to_collection_form.file.data
+        data = json.load(file)
+
+        # Ensure the data is either a list or an object
+        if not isinstance(data, (dict, list)):
+            return jsonify({"error": "Uploaded file must contain a valid JSON object or an array of objects."}), 400
+        # If the data is a single object, wrap it in a list to maintain consistency
+        if isinstance(data, dict):
+            data = [data]
+        data = convert_oid(data)  # Convert ObjectId fields if necessary
+
+        insert_data_into_collection(collection_name, data)
+
+        flash(f'تعداد {len(data)} رکورد با موفقیت به مجموعه داده {collection_name} افزوده شد.', 'success')
+    else:
+        flash('بارگذاری ناموفق!', 'danger')
+
     if current_user.role == 'supervisor':
         return redirect(url_for('supervisor'))
     else:

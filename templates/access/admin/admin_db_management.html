@@ -189,12 +189,34 @@
                 </div>
             </form>
 
+            <h5 id="add_data" style="margin-top: 80px">افزودن داده به یک مجموعه داده</h5>
+            <form action="{{ url_for('add_data_to_collection') }}" method="post" enctype="multipart/form-data"
+                  style="margin-right: 20px">
+                {{ add_data_to_collection_form.hidden_tag() }}
+                <div class="form-group" style="display: flex; align-items: center; width: 100%; margin-top: 10px ">
+                    <label for="collection_name" style="width:62%; flex-grow: 1; margin-left: 10px;">
+                        {{ add_data_to_collection_form.data_collection.label }}
+                    </label>
+                    {{ add_data_to_collection_form.data_collection(class="form-control",  style="width:38%;") }}
+                </div>
+                <div class="form-group" style="padding-top:10px ">
+                    <label for="file">
+                        {{ add_data_to_collection_form.file.label }}
+                    </label>
+                </div>
+                <div style="display: flex; align-items: center; width: 100%;">
+                    {{ add_data_to_collection_form.file(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
+                    {{ add_data_to_collection_form.submit(class="btn btn-success", style="width:38%;") }}
+                </div>
+            </form>
+
             <h5 id="add_labels" style="margin-top: 80px">اختصاص برچسب برای داده ها</h5>
             <form action="{{ url_for('admin_db_management') }}" method="post" id="optionForm"
                   onsubmit="updateHiddenField()" style="margin-right: 20px">
                 {{ set_data_config_form.hidden_tag() }}
                 <div class="form-group" style="display: flex; align-items: center; width: 100%; margin-top: 10px ">
-                    <label for="collection_name" style="width:62%; flex-grow: 1; margin-left: 10px;">مجموعه داده مورد نظر را انتخاب کنید:</label>
+                    <label for="collection_name" style="width:62%; flex-grow: 1; margin-left: 10px;">مجموعه داده مورد
+                        نظر را انتخاب کنید:</label>
                     {{ set_data_config_form.data_collection(class="form-control",  style="width:38%;") }}
                 </div>
                 <div style="display: flex; align-items: center; width: 100%;margin-top: 10px">
@@ -205,7 +227,8 @@
                 <div style="display: flex; align-items: center; width: 100%; margin-top: 10px">
                     {{ set_data_config_form.new_option.label(style="width:40%; padding-top: 5px") }}
                     {{ set_data_config_form.new_option(class="form-control", style="margin-right: 10px; width:41%;", size=10) }}
-                    <button type="button" onclick="addOption()" class="btn btn-success" style="width:19%; margin-right: 10px;">افزودن
+                    <button type="button" onclick="addOption()" class="btn btn-success"
+                            style="width:19%; margin-right: 10px;">افزودن
                     </button>
                 </div>
                 <div style="display: flex; align-items: center; width: 100%; margin: 10px 0 50px 0">
@@ -215,7 +238,7 @@
                     </select>
                     <button type="submit" name="save_labels" class="btn btn-danger"
                             style="white-space: nowrap;">
-                            اعمال تنظیمات برچسب
+                        اعمال تنظیمات برچسب
                     </button>
                 </div>
             </form>

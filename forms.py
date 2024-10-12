@@ -104,3 +104,8 @@ class AddAverageLabelForm(FlaskForm):
     data_collection = SelectField('مجموعه داده مورد نظر را انتخاب کنید:', choices=get_db_collection_names(), validators=[DataRequired()])
     set_average_label = SubmitField('افزودن برچسب تجمعی')
 
+
+class AddDataToCollectionForm(FlaskForm):
+    data_collection = SelectField('مجموعه داده مورد نظر را انتخاب کنید:', choices=get_db_collection_names(), validators=[DataRequired()])
+    file = FileField('فایل JSON:', validators=[DataRequired()])
+    submit = SubmitField('افزودن داده')
