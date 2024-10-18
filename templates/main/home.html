@@ -1,8 +1,36 @@
 {% extends 'main/base.html' %}
 {% block title %} برچسب گذاری داده{% endblock %}
 
-
 {% block content %}
-    <h1 class="text-center" style="padding: 40px">به سامانه برچسب گذاری داده ها خوش آمدید.</h1>
-    <h2 class="d-flex justify-content-center" style="padding-bottom: 30px">لطفا برای افزودن برچسب با نام کاربری خود وارد شوید.</h2>
+    <style>
+        .content-background {
+            width: 78vw; /* 78% of the viewport width */
+            height: calc(100vh - 100px); /* Full viewport height minus navbar height (adjust 60px as per navbar size) */
+            background-image: url('/static/images/labeling.jpeg'); /* Background image */
+            background-size: contain; /* Ensure the entire image fits */
+            background-position: center; /* Center the image */
+            background-repeat: no-repeat; /* Prevent image repeat */
+            margin-top: 0; /* Ensure there's no gap at the top */
+            padding-top: 0; /* Ensure no padding between the navbar and image */
+            position: relative; /* So we can position the text absolutely */
+        }
+
+        .text-overlay {
+            position: absolute;
+            top: 10px; /* Position text slightly below the top */
+            left: 50%;
+            transform: translateX(-50%); /* Center the text horizontally */
+            background-color: rgba(255, 255, 255, 0.6); /* Semi-transparent background for readability */
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+    </style>
+
+    <div class="content-background">
+        <div class="text-overlay">
+            <h4>به سامانه برچسب گذاری داده ها خوش آمدید.</h4>
+        </div>
+    </div>
+
 {% endblock %}

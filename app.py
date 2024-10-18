@@ -51,7 +51,9 @@ def load_user(user_id):
 @app.route('/home')
 @app.route('/')
 def home():
-    return render_template('main/home.html')
+    # return render_template('main/home.html')
+    # ignore welcome page and go directly to login
+    return redirect(url_for('login'))
 
 
 # @limiter.limit("3 per minute")
@@ -136,7 +138,10 @@ def role_required(*roles):
 @app.route('/admin', methods=['GET', 'POST'])
 @role_required('admin')
 def admin():
-    return render_template('access/admin/admin_base.html')
+    # return render_template('access/admin/admin_base.html')
+    # ignore welcome page for admin and go directly to db management
+    return redirect(url_for('admin_db_management'))
+
 
 
 @app.route('/admin_user_management', methods=['GET', 'POST'])
@@ -658,6 +663,9 @@ def supervisor():
                            threshold=threshold,
                            conflict_row=conflict_row,
                            data_states=data_states)
+
+
+
 
 
 if __name__ == '__main__':

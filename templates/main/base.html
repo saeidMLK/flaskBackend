@@ -19,18 +19,19 @@
         }
 
         body {
-            background-color: var(--background-color);
-            background-image: url('/static/images/Tiling.svg.png');
+            background-color: var(--background-color); /* Your background color */
+            background-image: linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), /* Semi-transparent overlay */
+                url('/static/images/Tiling.svg.png'); /* Your background image */
             background-size: 450px 300px; /* Width and height of each tile */
             background-repeat: repeat; /* This will tile the image */
             font-family: 'sans-serif', Tahoma, sans-serif; /* Apply the custom font */
-
         }
+
 
         .container {
             background-color: rgba(255, 255, 255, 0.40); /* Optional: makes the content area slightly transparent */
             padding: 40px 60px 40px 60px;
-            {#border-radius: 10px 0 0 10px;#}
+        {#border-radius: 10px 0 0 10px;#}
         }
     </style>
     <title>{% block title %}سیستم برچسب زنی{% endblock %}</title>

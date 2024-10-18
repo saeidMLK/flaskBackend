@@ -2559,7 +2559,7 @@ textarea.form-control-lg {
     width: 1rem;
     height: 1rem;
     margin-top: -.25rem;
-    background-color: #45ce57;
+    background-color: #2218a7;
     border: 0;
     border-radius: 1rem;
     -webkit-transition: background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
@@ -2576,7 +2576,7 @@ textarea.form-control-lg {
 }
 
 .form-range::-webkit-slider-thumb:active {
-    background-color: rgb(246, 64, 36)
+    background-color: rgb(255, 0, 0)
 }
 
 .form-range::-webkit-slider-runnable-track {
@@ -2584,7 +2584,7 @@ textarea.form-control-lg {
     height: .5rem;
     color: transparent;
     cursor: pointer;
-    background-color: #60ab91;
+    background-color: #2e86c1;
     border-color: transparent;
     border-radius: 1rem
 }
@@ -3073,13 +3073,13 @@ textarea.form-control-lg {
 
 .btn-success {
     color: #fff;
-    background-color: #60ab91;
+    background-color: #2e86c1;
     border-color: #488d75
 }
 
 .btn-success:hover {
     color: #fff;
-    background-color: #e4381e;
+    background-color: #2218a7;
     border-color: #a22b1b
 }
 
@@ -3178,13 +3178,13 @@ textarea.form-control-lg {
 
 .btn-danger {
     color: #fff;
-    background-color: #e4381e;
+    background-color: #ff0000;
     border-color: #9b3323
 }
 
 .btn-danger:hover {
     color: #fff;
-    background-color: #ff0000;
+    background-color: #a20000;
     border-color: #ec061c
 }
 
