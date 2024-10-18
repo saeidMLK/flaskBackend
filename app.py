@@ -9,7 +9,7 @@ from functools import wraps
 from flask_wtf.csrf import CSRFProtect
 from bson.objectid import ObjectId
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from flask import Flask, render_template, redirect, url_for, flash, request, send_file, jsonify
+from flask import Flask, render_template, redirect, url_for, flash, request, send_file, jsonify, session
 from forms import LoginForm, SignUpForm, RemoveUserForm, ExtractDBForm, AddLabelForm, ReadOneRowDataForm, \
     ReportTaskForm, ConflictSearchForm, SetDataConfigForm, ImportDBForm, AddAverageLabelForm, AddDataToCollectionForm
 from models import find_user, add_user, check_password, find_user_by_id, remove_user_by_name, get_all_users, \
@@ -55,39 +55,64 @@ def home():
     # ignore welcome page and go directly to login
     return redirect(url_for('login'))
 
+# Global dictionary to track login attempts
+login_attempts = {}
 
-# @limiter.limit("3 per minute")
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
-    captcha_text, captcha_path = generate_captcha()
+    username = form.username.data  # Capture username for tracking
+
+    # Initialize login attempts for the username if not already done
+    if username not in login_attempts:
+        login_attempts[username] = 0
+
+    # Generate CAPTCHA only if login attempts >= 1
+    captcha_text, captcha_path = None, None
+    if login_attempts[username] > 0:
+        captcha_text, captcha_path = generate_captcha()
+
     if request.method == 'POST':
+        # # Update the captcha validation based on login attempts
+        # form.validate_captcha = lambda field: form.validate_captcha(field, login_attempts[username])
+
+        # Validate the form including the CAPTCHA if required
         if form.validate_on_submit():
-            entered_captcha = form.captcha.data.lower()
-            actual_captcha = request.form.get('captcha_text').lower()
-            if entered_captcha == actual_captcha:
-                sanitized_username = sanitize_input(form.username.data)
-                user = find_user(sanitized_username)
-                if user and check_password(user, form.password.data):
-                    login_user(user)
-                    role = user.role
-                    if role == 'admin':
-                        flash(f'ورود موفق، دسترسی مدیر!', 'success')
-                        return redirect(url_for('admin'))
-                    elif role == 'supervisor':
-                        flash(f'ورود موفق، دسترسی سوپروایزر!', 'success')
-                        return redirect(url_for('supervisor'))
-                    else:
-                        flash(f'ورود موفق، دسترسی کاربر!', 'success')
-                        return redirect(url_for('user'))
+            # Check if CAPTCHA is required (for failed attempts)
+            if login_attempts[username] > 0:
+                entered_captcha = form.captcha.data.lower() if form.captcha.data else None
+                actual_captcha = request.form.get('captcha_text').lower() if request.form.get('captcha_text') else None
+
+                if entered_captcha != actual_captcha:
+                    flash('کلمات تصویر به درستی وارد نشده، دوباره تلاش کنید!', 'danger')
+                    return render_template('registration/login.html', form=form, captcha_text=captcha_text, captcha_image_url=captcha_path)
+
+            # Proceed with normal authentication
+            sanitized_username = sanitize_input(form.username.data)
+            user = find_user(sanitized_username)
+            if user and check_password(user, form.password.data):
+                login_user(user)
+                login_attempts[username] = 0  # Reset login attempts on successful login
+                role = user.role
+                if role == 'admin':
+                    flash(f'ورود موفق، دسترسی مدیر!', 'success')
+                    return redirect(url_for('admin'))
+                elif role == 'supervisor':
+                    flash(f'ورود موفق، دسترسی سوپروایزر!', 'success')
+                    return redirect(url_for('supervisor'))
                 else:
-                    flash('نام کاربری یا کلمه عبور اشتباه است.', 'danger')
+                    flash(f'ورود موفق، دسترسی کاربر!', 'success')
+                    return redirect(url_for('user'))
             else:
-                flash('کلمات تصوبر به درستی وارد نشده، دوباره تلاش کنید!', 'danger')
+                # Increment login attempts on failed password/username match
+                login_attempts[username] += 1
+                flash('نام کاربری یا کلمه عبور اشتباه است.', 'danger')
         else:
             flash('Form validation failed. Please try again.', 'danger')
-    return render_template('registration/login.html', form=form, captcha_text=captcha_text,
-                           captcha_image_url=captcha_path)
+
+    # Render the login page with CAPTCHA if required
+    return render_template('registration/login.html', form=form, captcha_text=captcha_text, captcha_image_url=captcha_path)
+
 
 
 @app.route('/sign-up', methods=['GET', 'POST'])

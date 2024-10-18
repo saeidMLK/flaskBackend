@@ -1,8 +1,10 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, FileField, HiddenField, RadioField
 from wtforms.fields.numeric import IntegerField
-from wtforms.validators import DataRequired, Email, EqualTo, InputRequired, NumberRange
+from wtforms.validators import DataRequired, Email, EqualTo, InputRequired, NumberRange, Optional, ValidationError
 from wtforms.fields import SelectField
+from flask import session  # Import session to access it in validation
+
 from wtforms.widgets import ListWidget, CheckboxInput
 
 import models
@@ -10,11 +12,18 @@ from config import ConfigDB
 from models import get_db_collection_names
 
 
+# class LoginForm(FlaskForm):
+#     username = StringField('نام کاربری', validators=[DataRequired()])
+#     password = PasswordField('کلمه عبور', validators=[DataRequired()])
+#     captcha = StringField('کلمات تصویر را وارد کنید:', validators=[DataRequired()])
+#     submit = SubmitField('ورود')
 class LoginForm(FlaskForm):
     username = StringField('نام کاربری', validators=[DataRequired()])
     password = PasswordField('کلمه عبور', validators=[DataRequired()])
-    captcha = StringField('کلمات تصویر را وارد کنید:', validators=[DataRequired()])
+    captcha = StringField('کلمات تصویر را وارد کنید:', validators=[Optional()])  # Initially optional
     submit = SubmitField('ورود')
+
+
 
 
 class SignUpForm(FlaskForm):

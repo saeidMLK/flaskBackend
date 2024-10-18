@@ -3,18 +3,21 @@
 {% block title %} ورود {% endblock %}
 
 {% block content %}
-        <div class="halves">
-            <div class="half_right input-box">
-                <form method="post" action="{{ url_for('login') }}">
-                    {{ form.hidden_tag() }}
-                    <div class="mb-3">
-                        {{ form.username.label(class="form-label") }}
-                        {{ form.username(class="form-control") }}
-                    </div>
-                    <div class="mb-3">
-                        {{ form.password.label(class="form-label") }}
-                        {{ form.password(class="form-control") }}
-                    </div>
+    <div class="halves">
+        <div class="half_right input-box">
+            <form method="post" action="{{ url_for('login') }}">
+                {{ form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ form.username.label(class="form-label") }}
+                    {{ form.username(class="form-control") }}
+                </div>
+                <div class="mb-3">
+                    {{ form.password.label(class="form-label") }}
+                    {{ form.password(class="form-control") }}
+                </div>
+
+                {# Show CAPTCHA only if it exists (login attempt failed) #}
+                {% if captcha_image_url %}
                     <div class="mb-3">
                         <img src="{{ captcha_image_url }}" alt="CAPTCHA" style="width: 90%">
                     </div>
@@ -23,13 +26,16 @@
                         {{ form.captcha(class="form-control") }}
                     </div>
                     <input type="hidden" name="captcha_text" value="{{ captcha_text }}">
-                    <div class="mb-3">
-                        {{ form.submit(class="btn btn-success") }}
-                    </div>
-                </form>
-            </div>
-             <div class="half_left">
-                <img src="/static/images/labeling4.jpg" alt="Your Image">
-            </div>
+                {% endif %}
+
+
+                <div class="mb-3">
+                    {{ form.submit(class="btn btn-success") }}
+                </div>
+            </form>
         </div>
+        <div class="half_left">
+            <img src="/static/images/labeling4.jpg" alt="Your Image">
+        </div>
+    </div>
 {% endblock %}
