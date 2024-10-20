@@ -49,6 +49,13 @@
                             اختصاص برچسب برای داده ها
                         </a>
                     </li>
+                    <li class="nav-item w-100">
+                        <a class="nav-link nav-link2 w-100 text-center"
+                           href="{{ url_for('admin_db_management') }}#remove_data_collection"
+                           style="padding: 10px; margin-bottom: 5px;">
+                            حذف مجموعه داده
+                        </a>
+                    </li>
                 </ul>
             </div>
         </nav>
@@ -237,7 +244,7 @@
                             style="width:19%; margin-right: 10px;">افزودن
                     </button>
                 </div>
-                <div style="display: flex; align-items: center; width: 100%; margin: 10px 0 50px 0">
+                <div style="display: flex; align-items: center; width: 100%; margin-top: 10px">
                     <select class="form-control" id="dynamicSelect" name="dynamicSelect"
                             style="flex-grow: 1;margin-left: 10px; border: 1px solid #ccc;">
                         <option value="" disabled selected>اینجا برچسب های مورد نظر می باشند</option>
@@ -249,18 +256,55 @@
                 </div>
             </form>
 
+
+            <h5 id="remove_data_collection" style="margin-top: 80px">حذف یک مجموعه داده از پایگاه داده ها</h5>
+            <form action="{{ url_for('admin_db_management') }}" method="post" style="margin-right: 20px" onsubmit="return confirmDelete();">
+                {{ remove_data_collection_form.hidden_tag() }}
+                <div class="form-group">
+                    <label for="collection_name">مجموعه مورد نظر را انتخاب کنید:</label>
+                </div>
+                <div style="display: flex; align-items: center; width: 100%;">
+                    {{ remove_data_collection_form.data_collection(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
+                    <button type="submit" name="remove_collection" class="btn btn-danger"
+                            style="width: 38%">
+                        حذف مجموعه داده!
+                    </button>
+                </div>
+{#                <div style="display: flex; align-items: center; margin-top:10px">#}
+{#                    {{ remove_data_collection_form.update_user_scores(style="width:5%; flex-grow: 1; margin-left: 10px;") }}#}
+{#                    <label for="update_user_scores" style="margin-left: 10px; width: 90%">بروزرسانی امتیازات#}
+{#                        کاربران</label>#}
+{#                </div>#}
+                <p style="font-size: 12px; margin:10px 0 40px 0">با حذف داده تمامی امتیازاتی که کاربران از
+                    برچسب زدن این داده بدست آورده اند حذف می شود.</p>
+            </form>
+
+            <script type="text/javascript">
+                function confirmDelete() {
+                    // Get the selected collection name from the form
+                    var collection = document.querySelector('select[name="data_collection"]').value;
+
+                    // Display a confirmation dialog with the collection name
+                    return confirm("آیا از حذف مجموعه داده " + collection + " مطمئن هستید؟ این عمل غیر قابل بازگشت است.");
+                }
+            </script>
+
             <script src="{{ url_for('static', filename='js/admin_db.js') }}"></script>
+
             <script>
                 function updateThresholdHiddenField() {
                     var rangeInput = document.getElementById('threshold');
                     var hiddenInput = document.getElementById('hiddenThreshold');
                     hiddenInput.value = rangeInput.value;
-                };
+                }
             </script>
         </div>
+
         <div class="half_left" style="max-width: 30%">
-            <img src="/static/images/left-side4.jpg">
+            {#            <img src="/static/images/left-side4.jpg">#}
+            <img src="/static/images/ss.jpg">
         </div>
+
     </div>
 {% endblock %}
 

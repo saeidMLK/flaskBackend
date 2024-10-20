@@ -10,6 +10,8 @@ import json
 client = MongoClient(ConfigDB.MONGODB_URI)
 db = client[ConfigDB.MONGO_DBNAME]
 users_collection = db.users
+
+
 # data_collection = db.data
 
 class User(UserMixin):
@@ -36,18 +38,26 @@ def find_user_by_id(user_id):
     return User.from_document(user_data)
 
 
-def add_user(username, password, collections, role):
+def add_user(username, password, collections, role, creator):
     if not find_user(username):
         password_hash = generate_password_hash(password)
         if role == 'admin':
-            collections = 'all'
-        users_collection.insert_one({'username': username, 'password_hash': password_hash, 'collections': collections, 'role': role})
+            collections = ['all']
+        users_collection.insert_one(
+            {'username': username, 'password_hash': password_hash, 'collections': collections, 'role': role,
+             'creator': [creator]})
         return True
     return False
 
 
 def get_all_users():
     user_docs = users_collection.find()
+    users = [User.from_document(doc) for doc in user_docs]
+    return users
+
+
+def get_supervisor_s_users(username):
+    user_docs = users_collection.find({'creator': username})
     users = [User.from_document(doc) for doc in user_docs]
     return users
 
@@ -79,12 +89,13 @@ def get_db_collection_names(sys_collections_included=0):
         filtered_list = list(set(collections) - items_to_remove)
         return filtered_list
 
+
 def extract_db_collection(path, collection_name, chunk_size=1000):
     """
     Extracts the data from the specified MongoDB collection and writes it to a JSON file in chunks.
     chunk_size (int): The number of documents to process in each chunk. Default is 1000.
     """
-    with open(path, 'w',  encoding='utf-8') as file:
+    with open(path, 'w', encoding='utf-8') as file:
         file.write('[')  # Start the JSON array
         cursor = db[collection_name].find()
         first = True
@@ -131,7 +142,8 @@ def import_db_collection(username, collection_name, data):
     # Update the user's collections in the "users" collection
     db.users.update_one(
         {'username': username},
-        {'$addToSet': {'collections': collection_name}}  # Add the collection name if it's not already present, add collaction name in user profile
+        {'$addToSet': {'collections': collection_name}}
+        # Add the collection name if it's not already present, add collaction name in user profile
     )
     # Add dataset to db
     data = convert_oid(data)
@@ -207,8 +219,9 @@ def get_user_performance(username, collection_name):
 
     # Avoid division by zero by checking if number_of_labels is greater than zero
     if number_of_labels > 0:
-        consensus_degree = round((total_consensus_degree / number_of_labels) *100)
-        label_percentage = round((number_of_labels / total_rows) * 100)  # Calculate the percentage of labels set by the user
+        consensus_degree = round((total_consensus_degree / number_of_labels) * 100)
+        label_percentage = round(
+            (number_of_labels / total_rows) * 100)  # Calculate the percentage of labels set by the user
     else:
         consensus_degree = 0
         label_percentage = 0
@@ -288,13 +301,15 @@ def calculate_and_set_average_label(collection_name):
     except Exception:
         return False
 
+
 # calculate_and_set_average_label("data_old")
 
 
 def get_recent_labels(username, collection_name, limit=10):
     # collections = get_user_collection(username)
     collection = db[collection_name]
-    rows = collection.find({f"label.{username}": {"$exists": True}}, {'data': 1, 'label': 1}).sort('_id', -1).limit(limit)
+    rows = collection.find({f"label.{username}": {"$exists": True}}, {'data': 1, 'label': 1}).sort('_id', -1).limit(
+        limit)
     recent_labels = []
     for row in rows:
         recent_labels.append({'id': str(row['_id']), 'data': row.get('data', ''), 'labels': row.get('label', {})})
@@ -325,7 +340,8 @@ def get_top_users(k=3):
     for user in users:
         categorized_users[user.role].append(user.username)
 
-    user_data = defaultdict(lambda: {'total_labels': 0, 'total_consensus': 0, 'collections_count': 0})  # To store data for each user
+    user_data = defaultdict(
+        lambda: {'total_labels': 0, 'total_consensus': 0, 'collections_count': 0})  # To store data for each user
 
     if categorized_users['user']:
         for collection in collections:
@@ -412,3 +428,36 @@ def insert_data_into_collection(collection_name, data):
         return result.inserted_ids
     except Exception as e:
         raise Exception(f"Error inserting data into collection {collection_name}: {str(e)}")
+
+
+def assign_collection_to_user(username, collection_name):
+    # Get the user's current document to check the type of 'collections'
+    user_data = db.users.find_one({'username': username})
+
+    if user_data:
+        # Check if 'collections' is a string and convert it to an array
+        if isinstance(user_data.get('collections'), str):
+            db.users.update_one(
+                {'username': username},
+                {'$set': {'collections': [user_data['collections']]}}  # Convert string to array
+            )
+
+    # Update the user's collections in the "users" collection
+    db.users.update_one(
+        {'username': username},
+        {'$addToSet': {'collections': collection_name}}  # Add the collection name if it's not already present
+    )
+
+
+def remove_data_collection(collection_name):
+    try:
+        db[collection_name].drop()
+        config_collection = db['config']
+        config_collection.delete_one({'collection': collection_name})
+        users_collection.update_many(
+            {'collections': collection_name},
+            {'$pull': {'collections': collection_name}})
+        return True
+    except Exception:
+        return False
+

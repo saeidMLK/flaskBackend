@@ -34,8 +34,7 @@
                 <input type="hidden" id="selected-collections" name="collections" value="">
 
                 <!-- Collection buttons -->
-                <div id="collections-buttons-div" {% if form.role.data != 'admin' %} style="display: block;" {% else %}
-                     style="display: none;" {% endif %}>
+                <div id="collections-buttons-div">
                     <div class="mb-3" style="padding-top: 20px">
                         <label for="collections-buttons" class="form-label">داده های مد نظر برای برچسب زدن:</label>
                     </div>
@@ -52,7 +51,7 @@
             </form>
         </div>
         <div class="half_left"  style="max-width: 45%">
-            <img src="/static/images/login.png" alt="Your Image">
+            <img src="/static/images/w3.jpg" alt="Your Image">
         </div>
     </div>
 
@@ -94,10 +93,10 @@
             const collectionButtonsDiv = document.getElementById('collections-buttons-div');
 
             roleSelect.addEventListener('change', function () {
-                if (this.value === 'admin') {
-                    collectionButtonsDiv.style.display = 'none';  // Hide if role is admin
+                if (this.value === 'user') {
+                    collectionButtonsDiv.style.display = 'block';  // Hide if role is admin
                 } else {
-                    collectionButtonsDiv.style.display = 'block';  // Show for other roles
+                    collectionButtonsDiv.style.display = 'none';  // Show for other roles
                 }
             });
         });

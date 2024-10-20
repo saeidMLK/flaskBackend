@@ -10,17 +10,16 @@
 {% block sidebar %}{% endblock %}
 
 {% block content %}
-
+    <div style="width: 90vw; display: block;"></div>
     <h2 style="text-align: center">برچسب گذاری</h2>
-
     <form action="{{ url_for('user') }}" method="post" id="read-one-row-form"
-          style="margin-top: 30px; margin-right: 20px">
+          style="margin-top: 30px; margin-right: 20px;">
         {{ read_one_row_form.hidden_tag() }}
         {{ read_one_row_form.row_id(class="form-control", type="hidden") }}
         {{ read_one_row_form.username(class="form-control", type="hidden") }}
         {{ read_one_row_form.collection.label(style="padding:30px 0 30px 0") }}
         {{ read_one_row_form.collection(id="selected-collection", class="form-control", type="hidden") }}
-        <div id="collections-buttons" class="btn-group-toggle" data-toggle="buttons" style="padding-bottom: 80px">
+        <div id="collections-buttons" class="btn-group-toggle" data-toggle="buttons" style="padding-bottom: 80px;">
             {% for value in user_collections %}
                 <button type="button" class="btn btn-success {% if value == selected_collection %}active{% endif %}"
                         data-value="{{ value }}">
@@ -31,7 +30,22 @@
 
         <div class="form-group">
             {{ read_one_row_form.data.label(style="padding-bottom:10px") }}:
-            {% if read_one_row_form.data.data is string %}
+            <!-- Check if the data contains an image (assumed to be base64-encoded) -->
+            {% if 'image_data' in read_one_row_form.data.data %}
+                <img src="data:image/jpeg;base64,{{ read_one_row_form.data.data['image_data'] }}" alt="Image"
+                     class="img-fluid" style="max-width: 100%; border: 2px solid #ced4da;">
+                <p>توضیحات تصویر:</p>
+                {{ read_one_row_form.data.data['description'] }}
+                <!-- Check if the data contains sound/voice (assumed to be base64-encoded) -->
+            {% elif 'audio_data' in read_one_row_form.data.data %}
+                <audio controls style="width: 100%; border: 2px solid #ced4da;">
+                    <source src="data:audio/wav;base64,{{ read_one_row_form.data.data['audio_data'] }}"
+                            type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+                <p>توضیحات صدا:</p>
+                {{ read_one_row_form.data.data['description'] }}
+            {% elif read_one_row_form.data.data is string %}
                 {{ read_one_row_form.data(class="form-control bg-transparent", style="border: 2px solid #ced4da;", readonly=True) }}
             {% elif read_one_row_form.data.data is mapping %}
                 <table class="table table-bordered">
@@ -59,12 +73,11 @@
         <input type="submit" style="display: none;">
     </form>
 
-    <form action="{{ url_for('add_label') }}" method="post" style="margin-top: 20px; margin-right: 20px">
+    <form action="{{ url_for('add_label') }}" method="post" style="margin-top: 50px; margin-right: 20px">
         {{ add_label_form.hidden_tag() }}
         {{ add_label_form.row_id(class="form-control", type="hidden") }}
         {{ add_label_form.username(class="form-control", type="hidden") }}
         <input type="hidden" name="selected_collection" value="{{ selected_collection }}">
-
         <div class="form-group">
             {{ add_label_form.label.label }}
             <div class="custom-control custom-radio">
@@ -83,8 +96,8 @@
     </form>
 
     {% if recent_labels %}
-        <h5 style="margin-top: 50px">داده و برچسب های اخیر</h5>
-        <div style="overflow-x: auto; padding-right: 20px; margin-top: 20px">
+        <h5 style="margin-top: 90px">داده و برچسب های اخیر</h5>
+        <div style="overflow-x: auto; padding-right: 20px;">
 
             <table class="table table-bordered">
                 <thead>
@@ -97,7 +110,19 @@
                 {% for label in recent_labels %}
                     <tr>
                         <td>
-                            {% if label.data is string %}
+                            {% if 'image_data' in label.data %}
+                                <img src="data:image/jpeg;base64,{{ label.data['image_data'] }}"
+                                     alt="Image" class="img-fluid" style="max-width: 100%; border: 2px solid #ced4da;">
+                                <p>توضیحات تصویر:</p>
+                                {{ read_one_row_form.data.data['description'] }}
+                            {% elif 'audio_data' in label.data %}
+                                <audio controls style="width: 100%; border: 2px solid #ced4da;">
+                                    <source src="data:audio/wav;base64,{{ label.data['audio_data'] }}" type="audio/wav">
+                                    Your browser does not support the audio element.
+                                </audio>
+                                <p>توضیحات صدا:</p>
+                                {{ read_one_row_form.data.data['description'] }}
+                            {% elif label.data is string %}
                                 {{ label.data }}
                             {% elif label.data is mapping %}
                                 <table class="table table-bordered">
@@ -137,14 +162,12 @@
                                 <button type="submit" class="btn btn-sm btn-primary" style="margin-top: 5px">ویرایش
                                 </button>
                             </form>
-
                         </td>
                     </tr>
                 {% endfor %}
                 </tbody>
             </table>
         </div>
-
     {% endif %}
 
 
@@ -174,3 +197,4 @@
         });
     </script>
 {% endblock %}
+

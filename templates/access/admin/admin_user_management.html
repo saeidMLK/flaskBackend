@@ -20,40 +20,64 @@
                             حذف کاربر
                         </a>
                     </li>
+                    <li class="nav-item w-100">
+                        <a class="nav-link nav-link2 w-100 text-center"
+                           href="{{ url_for('admin_user_management') }}#assign_data"
+                           style="padding: 10px; margin-bottom: 5px;">
+                            اختصاص داده
+                        </a>
+                    </li>
                 </ul>
             </div>
         </nav>
     </div>
     <style>
         .nav-link2:hover {
-            background-color:  var(--sidebar-color-hover); /* Light transparent white on hover */
+            background-color: var(--sidebar-color-hover); /* Light transparent white on hover */
             transition: background-color 0.3s ease;
         }
     </style>
 {% endblock %}
 
 {% block content %}
-    <div class="halves">
-        <div class="half_right input-box">
+    <div class="halves" style="max-width: 100%">
+        <div class="half_right input-box" style="max-width: 100%; border-radius: 10px;">
             <h2 class="title">مدیریت کاربران</h2>
-            <h5 id="new_user" style="margin-top: 70px">ساخت کاربر جدید:</h5>
-            <p>آیا میخواهید یک کاربر جدید اضافه کنید؟</p>
-            <a href="{{ url_for('sign_up') }}" class="btn btn-success">ایجاد کاربر</a>
-
+            <h5 id="new_user" style="margin-top: 70px">ساخت کاربر جدید</h5>
+            <div style="display: flex; align-items: center; width: 100%;">
+                <p style="width:62%; flex-grow: 1; margin-left: 10px;">آیا میخواهید یک کاربر جدید اضافه کنید؟</p>
+                <a href="{{ url_for('sign_up') }}" class="btn btn-success" style="width:38%;">ایجاد
+                    کاربر</a>
+            </div>
             {% if users %}
-                <h5 id="remove_user" style="margin-top: 70px">حذف کاربر</h5>
-                <form action="{{ url_for('remove_user') }}" method="post">
+                <h5 id="remove_user" style="margin-top: 80px">حذف کاربر</h5>
+                <form action="{{ url_for('remove_user') }}" method="post" style="margin-right: 20px">
                     {{ remove_user_form.hidden_tag() }}
-                    <p>کاربری که مایل به حذف آن هستید را انتخاب کنید:</p>
-                    {{ remove_user_form.username(class="form-control") }}
-                    {{ remove_user_form.submit(class="btn btn-danger btn-success", style="margin-top: 10px") }}
+                    <div class="form-group">
+                        <p>کاربری که مایل به حذف آن هستید را انتخاب کنید:</p>
+                    </div>
+                    <div style="display: flex; align-items: center; width: 100%;">
+                        {{ remove_user_form.username(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
+                        {{ remove_user_form.submit(class="btn btn-danger btn-success", style="width:38%;") }}
+                    </div>
                 </form>
             {% else %}
                 <p>کاربری یافت نشد.</p>
             {% endif %}
 
+            <h5 id="assign_data" style="margin-top: 80px">اختصاص داده به کاربران</h5>
+            <form action="{{ url_for('admin_user_management') }}" method="post" style="margin-right: 20px">
+                {{ assign_collection_to_user_form.hidden_tag() }}
+                <div style="display: flex; align-items: center; width: 100%;">
+                    <p style="margin: 2px 0 0 8px">اختصاص</p>
+                    {{ assign_collection_to_user_form.data_collection(class="form-control", style="width:52%; flex-grow: 1; margin-left: 10px;") }}
+                    <p style="margin: 2px 0 0 8px">به</p>
+                    {{ assign_collection_to_user_form.username(class="form-control", style="width:52%; flex-grow: 1; margin-left: 10px;") }}
+                    {{ assign_collection_to_user_form.submit(class="btn btn-danger btn-success", style="width:38%;") }}
+                </div>
+
         </div>
-        <div class="half_left">
+        <div class="half_left" style="max-width: 0%">
             <img src="/static/images/login.png" alt="Your Image">
         </div>
     </div>
@@ -71,7 +95,8 @@
                     {% if admin_users %}
                         <li class="nav-item w-100">
                             <div style="margin-bottom: 20px">
-                                <option style="background-color: var(--left-sidebar-color); color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 5px;">کاربران ادمین:
+                                <option style="background-color: var(--left-sidebar-color); color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 5px;">
+                                    کاربران ادمین:
                                 </option>
                                 <ul style="list-style: none; padding: 0; margin: 0;">
                                     {% for user in admin_users %}
@@ -86,7 +111,8 @@
                     {% if supervisor_users %}
                         <li class="nav-item w-100">
                             <div style="margin-bottom: 20px">
-                                <option style="background-color: var(--left-sidebar-color); color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 5px;">کاربران سوپروایزر:
+                                <option style="background-color: var(--left-sidebar-color); color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 5px;">
+                                    کاربران سوپروایزر:
                                 </option>
                                 <ul style="list-style: none; padding: 0; margin: 0;">
                                     {% for user in supervisor_users %}
@@ -101,7 +127,8 @@
                     {% if user_users %}
                         <li class="nav-item w-100">
                             <div style="margin-bottom: 20px">
-                                <option style="background-color: var(--left-sidebar-color); color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 5px;">کاربران برچسب گذار:
+                                <option style="background-color: var(--left-sidebar-color); color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 5px;">
+                                    کاربران برچسب گذار:
                                 </option>
                                 <ul style="list-style: none; padding: 0; margin: 0;">
                                     {% for user in user_users %}
@@ -118,7 +145,7 @@
     </div>
     <style>
         .nav-link2:hover {
-            background-color:  var(--sidebar-color-hover); /* Light transparent white on hover */
+            background-color: var(--sidebar-color-hover); /* Light transparent white on hover */
             transition: background-color 0.3s ease;
         }
     </style>

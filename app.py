@@ -11,13 +11,15 @@ from bson.objectid import ObjectId
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask import Flask, render_template, redirect, url_for, flash, request, send_file, jsonify, session
 from forms import LoginForm, SignUpForm, RemoveUserForm, ExtractDBForm, AddLabelForm, ReadOneRowDataForm, \
-    ReportTaskForm, ConflictSearchForm, SetDataConfigForm, ImportDBForm, AddAverageLabelForm, AddDataToCollectionForm
+    ReportTaskForm, ConflictSearchForm, SetDataConfigForm, ImportDBForm, AddAverageLabelForm, AddDataToCollectionForm, \
+    AssignCollectionToUserForm, RemoveDataCollectionForm
 from models import find_user, add_user, check_password, find_user_by_id, remove_user_by_name, get_all_users, \
     extract_db_collection, read_one_row_of_data, add_label_to_data, get_user_performance, get_first_conflict_row, \
     set_admin_label_for_conflicts, set_data_configs, import_db_collection, convert_oid, \
     rename_collection_if_exist, get_user_labels, get_db_collection_names, get_user_collection, \
     calculate_and_set_average_label, get_recent_labels, update_label, get_label_options, get_collection_users, \
-    get_user_role, get_top_users, get_data_states, set_data_state, insert_data_into_collection
+    get_user_role, get_top_users, get_data_states, set_data_state, insert_data_into_collection, \
+    assign_collection_to_user, get_supervisor_s_users, remove_data_collection
 from extensions import sanitize_input, generate_captcha, clear_old_captchas  # , limiter
 # Import the api.py to include API routes
 import api
@@ -55,9 +57,9 @@ def home():
     # ignore welcome page and go directly to login
     return redirect(url_for('login'))
 
+
 # Global dictionary to track login attempts
 login_attempts = {}
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
@@ -99,7 +101,7 @@ def login():
                     return redirect(url_for('admin'))
                 elif role == 'supervisor':
                     flash(f'ورود موفق، دسترسی سوپروایزر!', 'success')
-                    return redirect(url_for('supervisor'))
+                    return redirect(url_for('admin_db_management'))
                 else:
                     flash(f'ورود موفق، دسترسی کاربر!', 'success')
                     return redirect(url_for('user'))
@@ -114,7 +116,6 @@ def login():
     return render_template('registration/login.html', form=form, captcha_text=captcha_text, captcha_image_url=captcha_path)
 
 
-
 @app.route('/sign-up', methods=['GET', 'POST'])
 # @limiter.limit("1 per minute")
 def sign_up():
@@ -126,12 +127,13 @@ def sign_up():
         # Get the selected collections from the hidden input
         selected_collections = request.form.get('collections', '')  # Comma-separated string
         collections_list = selected_collections.split(',') if selected_collections else []
-        print(collections_list)
-        if add_user(sanitized_username, form.password.data, collections_list, form.role.data):
+        # print(collections_list)
+        if add_user(sanitized_username, form.password.data, collections_list, form.role.data, current_user.username):
             flash('ایجاد کاربر جدید با موفقیت انجام شد.', 'success')
+            return redirect(url_for('admin_user_management'))
         else:
             flash('ناموفق', 'danger')
-        return redirect(url_for('admin_user_management'))
+        return redirect(url_for('sign_up'))
     # else:
     # flash('Form validation failed. Please try again.', 'danger')
     return render_template('registration/sign_up.html', form=form, collections_choices=collections_choices)
@@ -168,18 +170,36 @@ def admin():
     return redirect(url_for('admin_db_management'))
 
 
-
 @app.route('/admin_user_management', methods=['GET', 'POST'])
-@role_required('admin')
+@role_required('admin', 'supervisor')
 def admin_user_management():
-    users = get_all_users()
+    assign_collection_to_user_form = AssignCollectionToUserForm()
     remove_user_form = RemoveUserForm()
     # loading users to user management form as an initialisation.
+    role = current_user.role
+    if role == 'supervisor':
+        collections = get_user_collection(current_user.username)
+        assign_collection_to_user_form.data_collection.choices = [(name, name) for name in collections]
+        users = get_supervisor_s_users(current_user.username)
+    else:
+        collections = get_db_collection_names(sys_collections_included=0)
+        assign_collection_to_user_form.data_collection.choices = [(name, name) for name in collections]
+        users = get_all_users()
+
+    assign_collection_to_user_form.data_collection.choices = [(name, name) for name in collections]
     if users:
         remove_user_form.username.choices = [(user.username, f"{user.username} -- {user.role}") for user in users]
+        assign_collection_to_user_form.username.choices = [(user.username, user.username) for user in users if user.role == 'user']
     else:
         flash('کاربری یافت نشد.', 'warning')
         remove_user_form = None
+
+    if assign_collection_to_user_form.validate_on_submit():
+        collection_name = assign_collection_to_user_form.data_collection.data
+        username = assign_collection_to_user_form.username.data
+        assign_collection_to_user(username, collection_name)
+        flash('داده با موفقیت اختصاص یافت.', 'success')
+
     # Categorize users by their roles
     categorized_users = defaultdict(list)
     for user in users:
@@ -188,13 +208,14 @@ def admin_user_management():
     return render_template('access/admin/admin_user_management.html',
                            users=users,
                            remove_user_form=remove_user_form,
+                           assign_collection_to_user_form=assign_collection_to_user_form,
                            admin_users=categorized_users.get('admin', []),
                            supervisor_users=categorized_users.get('supervisor', []),
                            user_users=categorized_users.get('user', []))
 
 
 @app.route('/remove_user', methods=['POST'])
-@role_required('admin')
+@role_required('admin', 'supervisor')
 def remove_user():
     users = get_all_users()
     remove_user_form = RemoveUserForm()
@@ -212,13 +233,22 @@ def remove_user():
 
 
 @app.route('/admin_report', methods=['GET', 'POST'])
-@role_required('admin')
+@role_required('admin', 'supervisor')
 def admin_report():
+    role = current_user.role
     report_task_form = ReportTaskForm()
-    collection_names_0 = get_db_collection_names(sys_collections_included=0)
-    report_task_form.collection.choices = [(name, name) for name in collection_names_0]
-    collection = report_task_form.collection.data or collection_names_0[0]
-    # print(collection)
+
+    if role == 'supervisor':
+        collections = get_user_collection(current_user.username)
+        report_task_form.collection.choices = [(name, name) for name in collections]
+        collection_0 = collections[0]
+    else:
+        collection_names_0 = get_db_collection_names(sys_collections_included=0)
+        report_task_form.collection.choices = [(name, name) for name in collection_names_0]
+        collection_0 = collection_names_0[0]
+
+    collection = report_task_form.collection.data or collection_0
+
     users = get_collection_users(collection)
     if users:
         report_task_form.username.choices = [user.username for user in users]
@@ -306,30 +336,41 @@ def get_users(collection_name):
 
 
 @app.route('/admin_db_management', methods=['GET', 'POST'])
-@role_required('admin')
+@role_required('admin', 'supervisor')
 def admin_db_management():
-    # Fetch the latest collection names
-    collection_names_0 = get_db_collection_names(sys_collections_included=0)
-    collection_names_1 = get_db_collection_names(sys_collections_included=1)
-    users = get_all_users()
-    conflict_search_form = ConflictSearchForm()
-    extract_db_form = ExtractDBForm()
     import_db_form = ImportDBForm()
-    set_data_config_form = SetDataConfigForm()
+    extract_db_form = ExtractDBForm()
     add_average_label_form = AddAverageLabelForm()
+    conflict_search_form = ConflictSearchForm()
+    set_data_config_form = SetDataConfigForm()
     add_data_to_collection_form = AddDataToCollectionForm()
+    remove_data_collection_form = RemoveDataCollectionForm()
+    # Fetch the latest collection names
+    if current_user.role == 'supervisor':
+        collections = get_user_collection(current_user.username)
+        extract_db_form.collection_name.choices = [(name, name) for name in collections]
+        data_states = get_data_states(current_user.username)
+    else:
+        collections = get_db_collection_names(sys_collections_included=0)
+        collection_names_1 = get_db_collection_names(sys_collections_included=1)
+        extract_db_form.collection_name.choices = [(name, name) for name in collection_names_1]
+        data_states = get_data_states('admin')
+
+    add_average_label_form.data_collection.choices = [(name, name) for name in collections]
+    conflict_search_form.data_collection.choices = [(name, name) for name in collections]
+    set_data_config_form.data_collection.choices = [(name, name) for name in collections]
+    add_data_to_collection_form.data_collection.choices = [(name, name) for name in collections]
+    remove_data_collection_form.data_collection.choices = [(name, name) for name in collections]
+    # users = get_all_users()
     extracted = request.args.get('extracted', False)
-    collection_name = request.args.get('collection_name', '')  # For downloading the collection.
+    # For downloading the collection.
+    if collections:
+        selected_collection = request.args.get('collection_name', collections[0])
+    else:
+        selected_collection = []
 
     conflict_row = None
     threshold = 0.7  # Default value
-    # Set choices for forms that need collection names
-    conflict_search_form.data_collection.choices = [(name, name) for name in collection_names_0]
-    extract_db_form.collection_name.choices = [(name, name) for name in collection_names_1]
-    set_data_config_form.data_collection.choices = [(name, name) for name in collection_names_0]
-    add_average_label_form.data_collection.choices = [(name, name) for name in collection_names_0]
-    add_data_to_collection_form.data_collection.choices = [(name, name) for name in collection_names_0]
-
     if request.method == 'POST':
         if 'search' in request.form:
             collection = conflict_search_form.data_collection.data
@@ -373,19 +414,30 @@ def admin_db_management():
                     flash('Failed to update data config.', 'danger')
             else:
                 flash('Failed to update data config. Form is not validate_on_submit', 'danger')
-    data_states = get_data_states('admin')
 
+        elif 'remove_collection' in request.form:
+            if remove_data_collection_form.validate_on_submit():
+                collection = remove_data_collection_form.data_collection.data
+                # update_user_scores = remove_data_collection_form.update_user_scores.data
+                if remove_data_collection(collection):
+                    flash('حذف مجموعه داده با موفقیت انجام شد.', 'success')
+                    return redirect(url_for('admin_db_management'))
+                else:
+                    flash('Failed to remove data collection.', 'danger')
+            else:
+                flash('Failed to remove data collection. Form is not validate_on_submit', 'danger')
     return render_template('access/admin/admin_db_management.html',
-                           conflict_search_form=conflict_search_form,
-                           conflict_row=conflict_row,
-                           users=users,
-                           extract_db_form=extract_db_form,
+                           collection_name=selected_collection,
                            import_db_form=import_db_form,
-                           set_data_config_form=set_data_config_form,
-                           add_average_label_form=add_average_label_form,
-                           add_data_to_collection_form=add_data_to_collection_form,
+                           extract_db_form=extract_db_form,
                            extracted=extracted,
-                           collection_name=collection_name,
+                           add_data_to_collection_form=add_data_to_collection_form,
+                           add_average_label_form=add_average_label_form,
+                           conflict_search_form=conflict_search_form,
+                           remove_data_collection_form=remove_data_collection_form,
+                           set_data_config_form=set_data_config_form,
+                           conflict_row=conflict_row,
+                           # users=users,
                            threshold=threshold,  # Pass the threshold to the template
                            data_states=data_states)
 
@@ -402,10 +454,7 @@ def add_average_label():
             flash(f' برچسب تجمعی افزوده نشد! خطای تابع درج برچسب.', 'danger')
     else:
         flash(f'برچسب تجمعی افزوده نشد! خطای فرم ارسالی.', 'danger')
-    if current_user.role == 'supervisor':
-        return redirect(url_for('supervisor'))
-    else:
-        return redirect(url_for('admin_db_management'))
+    return redirect(url_for('admin_db_management'))
 
 
 @app.route('/extract_db', methods=['POST'])
@@ -417,16 +466,11 @@ def extract_db():
         path = f'static/db/db_{collection_name}.json'
         extract_db_collection(path, collection_name)
         flash(f' دسته بندی {collection_name}  با موفقیت استخراج شد.', 'success')
-        if current_user.role == 'admin':
-            return redirect(url_for('admin_db_management', extracted=True, collection_name=collection_name))
-        else:
-            return redirect(url_for('supervisor', extracted=True, collection_name=collection_name))
+        return redirect(url_for('admin_db_management', extracted=True, collection_name=collection_name))
     else:
         flash('Failed to extract database.', 'danger')
-    if current_user.role == 'admin':
-        return redirect(url_for('admin_db_management'))
-    else:
-        return redirect(url_for('supervisor'))
+    return redirect(url_for('admin_db_management'))
+
 
 
 @app.route('/download_file/<collection_name>')
@@ -437,10 +481,8 @@ def download_file(collection_name):
         return send_file(path, as_attachment=True, download_name=f'extracted_{collection_name}.json')
     except FileNotFoundError:
         flash('The requested file was not found on the server.', 'danger')
-        if current_user.role == 'admin':
-            return redirect(url_for('admin_db_management'))
-        else:
-            return redirect(url_for('supervisor'))
+        return redirect(url_for('admin_db_management'))
+
 
 
 @app.route('/import_db', methods=['POST'])
@@ -463,17 +505,10 @@ def import_db():
                 flash(f'مجموعه داده {file_name} با موفقیت به دیتابیس اضافه شد.', 'success')
         except Exception as e:
             flash(f'بارگذاری ناموفق: {e}', 'danger')
-
-        if current_user.role == 'supervisor':
-            return redirect(url_for('supervisor'))
-        else:
-            return redirect(url_for('admin_db_management'))
+        return redirect(url_for('admin_db_management'))
     else:
         flash('بارگذاری ناموفق!', 'danger')
-    if current_user.role == 'supervisor':
-        return redirect(url_for('supervisor'))
-    else:
-        return redirect(url_for('admin_db_management'))
+    return redirect(url_for('admin_db_management'))
 
 
 @app.route('/add_data_to_collection', methods=['POST'])
@@ -499,10 +534,7 @@ def add_data_to_collection():
     else:
         flash('بارگذاری ناموفق!', 'danger')
 
-    if current_user.role == 'supervisor':
-        return redirect(url_for('supervisor'))
-    else:
-        return redirect(url_for('admin_db_management'))
+    return redirect(url_for('admin_db_management'))
 
 
 @app.route('/user', methods=['GET', 'POST'])
@@ -601,96 +633,93 @@ def add_label():
     return redirect(url_for('user', selected_collection=selected_collection))
 
 
-@app.route('/supervisor', methods=['GET', 'POST'])
-@role_required('supervisor')
-@login_required
-def supervisor():
-    import_db_form = ImportDBForm()
-    extract_db_form = ExtractDBForm()
-    # admin_label_config_form = SetDataConfigForm()
-    add_average_label_form = AddAverageLabelForm()
-    conflict_search_form = ConflictSearchForm()
-    set_data_config_form = SetDataConfigForm()
-    add_data_to_collection_form = AddDataToCollectionForm()
-    # collection_names_0 = get_db_collection_names(sys_collections_included=0)
-    collections = get_user_collection(current_user.username)
-    extract_db_form.collection_name.choices = [(name, name) for name in collections]
-    add_average_label_form.data_collection.choices = [(name, name) for name in collections]
-    conflict_search_form.data_collection.choices = [(name, name) for name in collections]
-    set_data_config_form.data_collection.choices = [(name, name) for name in collections]
-    add_data_to_collection_form.data_collection.choices = [(name, name) for name in collections]
-    # extract_db_form.collection_name = collections
-    extracted = request.args.get('extracted', False)
-    if collections:
-        selected_collection = request.args.get('collection_name', collections[0])
-    else:
-        selected_collection = []
-    conflict_row = None
-    threshold = 0.7  # Default value
-    if request.method == 'POST':
-        if 'search' in request.form:
-            collection = conflict_search_form.data_collection.data
-            conflict_search_form.hidden_collection.data = collection  # Store collection in hidden field
-            conflict_search_form.set_label_choices(collection)  # Set label choices based on selected collection
-            threshold = float(request.form.get('threshold', 0.5))
-            conflict_row = get_first_conflict_row(collection, threshold)
-        elif 'set_label' in request.form:
-            collection = request.form.get('hidden_collection')  # Retrieve collection from hidden field
-            conflict_search_form.data_collection.data = collection  # Repopulate form field
-            conflict_search_form.set_label_choices(collection)  # Set label choices based on selected collection
-            threshold = float(request.form.get('hidden_threshold', 0.5))  # Retrieve the threshold from the hidden field
-
-            if conflict_search_form.validate_on_submit():
-                label = conflict_search_form.label.data
-                row_id = request.form.get('row_id')
-                if row_id:
-                    try:
-                        row_id = ObjectId(row_id)
-                        if set_admin_label_for_conflicts(collection, row_id, label):
-                            flash('برچسب با موفقیت افزوده شد.', 'success')
-                        else:
-                            flash('Failed to set label.', 'danger')
-                    except bson.errors.InvalidId:
-                        flash('Invalid row ID.', 'danger')
-                else:
-                    flash('No row ID provided.', 'danger')
-                conflict_row = get_first_conflict_row(collection,
-                                                      threshold)  # Retrieve the next conflict row with the threshold
-            else:
-                flash('Form validation failed.', 'danger')
-
-        elif 'save_labels' in request.form:
-            print(set_data_config_form.validate_on_submit())
-            if set_data_config_form.validate_on_submit():
-                labels = set_data_config_form.labels.data
-                data_collection = set_data_config_form.data_collection.data
-                num_required_labels = set_data_config_form.num_required_labels.data
-                if set_data_configs(data_collection, labels, num_required_labels):
-                    flash('تنظیمات داده با موفقیت بروزرسانی شدند.', 'success')
-                else:
-                    flash('Failed to update data config.', 'danger')
-            else:
-                flash('Failed to update data config. Form is not validate_on_submit', 'danger')
-    data_states = get_data_states(current_user.username)
-
-
-    return render_template('access/supervisor/supervisor.html',
-                           supervisor_collections=collections,
-                           selected_collection=selected_collection,
-                           import_db_form=import_db_form,
-                           extract_db_form=extract_db_form,
-                           extracted=extracted,
-                           add_data_to_collection_form=add_data_to_collection_form,
-                           # admin_label_config_form=admin_label_config_form,
-                           add_average_label_form=add_average_label_form,
-                           conflict_search_form=conflict_search_form,
-                           set_data_config_form=set_data_config_form,
-                           threshold=threshold,
-                           conflict_row=conflict_row,
-                           data_states=data_states)
-
-
-
+# @app.route('/supervisor_db_management', methods=['GET', 'POST'])
+# @role_required('supervisor')
+# @login_required
+# def supervisor_db_management():
+#     import_db_form = ImportDBForm()
+#     extract_db_form = ExtractDBForm()
+#     # admin_label_config_form = SetDataConfigForm()
+#     add_average_label_form = AddAverageLabelForm()
+#     conflict_search_form = ConflictSearchForm()
+#     set_data_config_form = SetDataConfigForm()
+#     add_data_to_collection_form = AddDataToCollectionForm()
+#     # collection_names_0 = get_db_collection_names(sys_collections_included=0)
+#     collections = get_user_collection(current_user.username)
+#     extract_db_form.collection_name.choices = [(name, name) for name in collections]
+#     add_average_label_form.data_collection.choices = [(name, name) for name in collections]
+#     conflict_search_form.data_collection.choices = [(name, name) for name in collections]
+#     set_data_config_form.data_collection.choices = [(name, name) for name in collections]
+#     add_data_to_collection_form.data_collection.choices = [(name, name) for name in collections]
+#     # extract_db_form.collection_name = collections
+#     extracted = request.args.get('extracted', False)
+#     if collections:
+#         selected_collection = request.args.get('collection_name', collections[0])
+#     else:
+#         selected_collection = []
+#     conflict_row = None
+#     threshold = 0.7  # Default value
+#     if request.method == 'POST':
+#         if 'search' in request.form:
+#             collection = conflict_search_form.data_collection.data
+#             conflict_search_form.hidden_collection.data = collection  # Store collection in hidden field
+#             conflict_search_form.set_label_choices(collection)  # Set label choices based on selected collection
+#             threshold = float(request.form.get('threshold', 0.5))
+#             conflict_row = get_first_conflict_row(collection, threshold)
+#         elif 'set_label' in request.form:
+#             collection = request.form.get('hidden_collection')  # Retrieve collection from hidden field
+#             conflict_search_form.data_collection.data = collection  # Repopulate form field
+#             conflict_search_form.set_label_choices(collection)  # Set label choices based on selected collection
+#             threshold = float(request.form.get('hidden_threshold', 0.5))  # Retrieve the threshold from the hidden field
+#
+#             if conflict_search_form.validate_on_submit():
+#                 label = conflict_search_form.label.data
+#                 row_id = request.form.get('row_id')
+#                 if row_id:
+#                     try:
+#                         row_id = ObjectId(row_id)
+#                         if set_admin_label_for_conflicts(collection, row_id, label):
+#                             flash('برچسب با موفقیت افزوده شد.', 'success')
+#                         else:
+#                             flash('Failed to set label.', 'danger')
+#                     except bson.errors.InvalidId:
+#                         flash('Invalid row ID.', 'danger')
+#                 else:
+#                     flash('No row ID provided.', 'danger')
+#                 conflict_row = get_first_conflict_row(collection,
+#                                                       threshold)  # Retrieve the next conflict row with the threshold
+#             else:
+#                 flash('Form validation failed.', 'danger')
+#
+#         elif 'save_labels' in request.form:
+#             print(set_data_config_form.validate_on_submit())
+#             if set_data_config_form.validate_on_submit():
+#                 labels = set_data_config_form.labels.data
+#                 data_collection = set_data_config_form.data_collection.data
+#                 num_required_labels = set_data_config_form.num_required_labels.data
+#                 if set_data_configs(data_collection, labels, num_required_labels):
+#                     flash('تنظیمات داده با موفقیت بروزرسانی شدند.', 'success')
+#                 else:
+#                     flash('Failed to update data config.', 'danger')
+#             else:
+#                 flash('Failed to update data config. Form is not validate_on_submit', 'danger')
+#     data_states = get_data_states(current_user.username)
+#
+#
+#     return render_template('access/supervisor/supervisor_db_management.html',
+#                            supervisor_collections=collections,
+#                            selected_collection=selected_collection,
+#                            import_db_form=import_db_form,
+#                            extract_db_form=extract_db_form,
+#                            extracted=extracted,
+#                            add_data_to_collection_form=add_data_to_collection_form,
+#                            # admin_label_config_form=admin_label_config_form,
+#                            add_average_label_form=add_average_label_form,
+#                            conflict_search_form=conflict_search_form,
+#                            set_data_config_form=set_data_config_form,
+#                            threshold=threshold,
+#                            conflict_row=conflict_row,
+#                            data_states=data_states)
 
 
 if __name__ == '__main__':
