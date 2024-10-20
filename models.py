@@ -274,7 +274,6 @@ def set_data_configs(data_collection, labels, num_required_labels):
     # Convert the string to a Python list
     array_of_labels = json.loads(labels)
     ConfigDB.update_data_labels(data_collection, array_of_labels)
-    set_data_state(data_collection)
     return ConfigDB.set_num_required_labels(data_collection, num_required_labels)
 
 
@@ -331,7 +330,7 @@ def get_label_options(collection_name):
     return ConfigDB.get_data_labels(collection_name)
 
 
-def get_top_users(k=3):
+def get_top_users():
     collections = get_db_collection_names(0)
     if collections is None:
         collections = []
@@ -362,7 +361,6 @@ def get_top_users(k=3):
 
         # Now calculate the F-score based on total_labels and average_consensus for each user
     ranked_users = []
-
     for user, data in user_data.items():
         total_labels = data['total_labels']
         collections_count = data['collections_count']
@@ -379,20 +377,19 @@ def get_top_users(k=3):
         else:
             f_score = 0
 
+        score = int(total_labels * avg_consensus)
+
         ranked_users.append({
             'username': user,
             'total_labels': total_labels,
             'avg_consensus': avg_consensus,
-            'f_score': f_score
+            'f_score': f_score,
+            'score': score
         })
 
     # Sort users based on F-score in descending order
-    ranked_users = sorted(ranked_users, key=lambda x: x['f_score'], reverse=True)
-
-    if len(categorized_users['user']) < k:
-        return ranked_users[:len(categorized_users['user'])]
-    else:
-        return ranked_users[:k]
+    ranked_users = sorted(ranked_users, key=lambda x: x['score'], reverse=True)
+    return ranked_users
 
 
 def set_data_state(collection_name):

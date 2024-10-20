@@ -34,7 +34,7 @@
     </div>
     <style>
         .nav-link2:hover {
-            background-color:  var(--sidebar-color-hover);
+            background-color: var(--sidebar-color-hover);
             transition: background-color 0.3s ease;
         }
     </style>
@@ -70,7 +70,7 @@
             {% endif %}
         </div>
         <div class="half_left">
-{#            <img src="/static/images/left-side2.jpg" alt="Your Image">#}
+            {#            <img src="/static/images/left-side2.jpg" alt="Your Image">#}
             <img src="/static/images/tt4.png" alt="Your Image">
 
         </div>
@@ -187,36 +187,24 @@
     <div style="flex: 0 0 20%; background-color:var(--sidebar-color)">
         <div style="margin: 10px 0 10px 0">
             <option style="background-color:var(--left-sidebar-color); color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 10px;">
-                کاربران برتر
+                امتیازات
             </option>
         </div>
         <nav class="navbar navbar-expand-lg navbar-dark p-0"
              style="background-color: var(--sidebar-color); margin-top: 10px; position: sticky; top: 25px; z-index: 1000;">
             <div class="container-fluid d-flex flex-column justify-content-start align-items-stretch p-0">
                 <ul class="navbar-nav flex-column w-100" style="padding-inline-start: 0;">
-                    <li class="nav-item w-100">
-                        <div style="margin-bottom: 10px">
-                            <option style="background-color: var(--left-sidebar-color-sub-item); color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 10px;">
-                                {{ top_users[0].username }}
-                            </option>
-                        </div>
-                    </li>
-
-                    <li class="nav-item w-100">
-                        <div style="margin-bottom: 10px">
-                            <option style="background-color: var(--left-sidebar-color-sub-item); color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 10px;">
-                                {{ top_users[1].username }}
-                            </option>
-                        </div>
-                    </li>
-
-                    <li class="nav-item w-100">
-                        <div style="margin-bottom: 10px">
-                            <option style="background-color: var(--left-sidebar-color-sub-item); color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 10px;">
-                                {{ top_users[2].username }}
-                            </option>
-                        </div>
-                    </li>
+                    {% for user in top_users %}
+                        <li class="nav-item w-100">
+                            <div style="margin-bottom: 10px">
+                                <option style="background-color: var(--left-sidebar-color-sub-item); color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 10px;">
+                                    {{ user.username }}
+                                    :
+                                    {{ user.score }}
+                                </option>
+                            </div>
+                        </li>
+                    {% endfor %}
                 </ul>
             </div>
         </nav>

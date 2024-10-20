@@ -194,6 +194,12 @@
                   style="margin-right: 20px">
                 {{ import_db_form.hidden_tag() }}
                 <div class="form-group" style="padding-top:10px ">
+                    <label for="file"> یک عنوان برای مجموعه داده وارد کنید:</label>
+                </div>
+                <div style="display: flex; align-items: center; width: 100%;">
+                    {{ import_db_form.title(class="form-control", style="max-width:62%; flex-grow: 1; margin-left: 10px;") }}
+                </div>
+                <div class="form-group" style="padding-top:10px ">
                     <label for="file"> فایل CSV/JSON:</label>
                 </div>
                 <div style="display: flex; align-items: center; width: 100%;">

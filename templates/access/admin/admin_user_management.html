@@ -40,7 +40,7 @@
 {% endblock %}
 
 {% block content %}
-    <div class="halves" style="max-width: 100%">
+    <div class="halves" style="max-width: 80%">
         <div class="half_right input-box" style="max-width: 100%; border-radius: 10px;">
             <h2 class="title">مدیریت کاربران</h2>
             <h5 id="new_user" style="margin-top: 70px">ساخت کاربر جدید</h5>
@@ -75,7 +75,7 @@
                     {{ assign_collection_to_user_form.username(class="form-control", style="width:52%; flex-grow: 1; margin-left: 10px;") }}
                     {{ assign_collection_to_user_form.submit(class="btn btn-danger btn-success", style="width:38%;") }}
                 </div>
-
+            </form>
         </div>
         <div class="half_left" style="max-width: 0%">
             <img src="/static/images/login.png" alt="Your Image">

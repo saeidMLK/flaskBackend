@@ -47,7 +47,7 @@ class ExtractDBForm(FlaskForm):
 
 
 class ImportDBForm(FlaskForm):
-    # collection_name = SelectField('نام مجموعه', choices=models.get_db_collection_names(), validators=[DataRequired()])
+    title = StringField('عنوان مجموعه داده', validators=[DataRequired()])
     file = FileField('فایل JSON/CSV', validators=[DataRequired()])
     submit = SubmitField('افزودن مجموعه داده')
 

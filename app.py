@@ -310,7 +310,7 @@ def admin_report():
                 'page': page,
                 'per_page': per_page
             }
-    top_users = get_top_users(3)
+    top_users = get_top_users()
     return render_template('access/admin/admin_report.html', users=users, report_task_form=report_task_form,
                            report_data=report_data, collection=collection, top_users=top_users)
 
@@ -411,7 +411,9 @@ def admin_db_management():
                 data_collection = set_data_config_form.data_collection.data
                 num_required_labels = set_data_config_form.num_required_labels.data
                 if set_data_configs(data_collection, labels, num_required_labels):
+                    set_data_state(data_collection)
                     flash('تنظیمات داده با موفقیت بروزرسانی شدند.', 'success')
+                    return redirect(url_for('admin_db_management'))
                 else:
                     flash('Failed to update data config.', 'danger')
             else:
@@ -474,7 +476,6 @@ def extract_db():
     return redirect(url_for('admin_db_management'))
 
 
-
 @app.route('/download_file/<collection_name>')
 @role_required('admin', 'supervisor')
 def download_file(collection_name):
@@ -486,7 +487,6 @@ def download_file(collection_name):
         return redirect(url_for('admin_db_management'))
 
 
-
 @app.route('/import_db', methods=['POST'])
 @role_required( 'admin', 'supervisor')
 def import_db():
@@ -495,19 +495,20 @@ def import_db():
         file = import_db_form.file.data
         file_name_with_extension = secure_filename(file.filename)
         file_name, file_extension = os.path.splitext(file_name_with_extension)
-
+        collection_title = import_db_form.title.data
+        collection_title = secure_filename(collection_title)
         try:
             # Check if the collection already exists
-            if file_name in get_db_collection_names(sys_collections_included=1):
-                flash(f'این مجموعه داده از قبل وجود دارد.', 'warning')
+            if collection_title in get_db_collection_names(sys_collections_included=1):
+                flash(f'این عنوان داده از قبل وجود دارد.', 'warning')
                 return redirect(url_for('admin_db_management'))
 
             # Handle JSON file
             if file_extension.lower() == '.json':
                 data = json.load(file)
                 data = convert_oid(data)  # Convert ObjectId if necessary
-                import_db_collection(current_user.username, file_name, data)
-                flash(f'مجموعه داده {file_name} با موفقیت به دیتابیس اضافه شد.', 'success')
+                import_db_collection(current_user.username, collection_title, data)
+                flash(f'مجموعه داده {collection_title} با موفقیت به دیتابیس اضافه شد.', 'success')
 
             # Handle CSV file
             elif file_extension.lower() == '.csv':
@@ -516,8 +517,8 @@ def import_db():
                 df = pd.read_csv(file)
                 data = df.to_dict(orient='records')
                 print(2)
-                import_db_collection(current_user.username, file_name, data)
-                flash(f'مجموعه داده {file_name} با موفقیت به دیتابیس اضافه شد.', 'success')
+                import_db_collection(current_user.username, collection_title, data)
+                flash(f'مجموعه داده {collection_title} با موفقیت به دیتابیس اضافه شد.', 'success')
 
             else:
                 flash('فرمت فایل پشتیبانی نمی‌شود. فقط JSON و CSV مجاز هستند.', 'danger')
