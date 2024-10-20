@@ -3,6 +3,8 @@ import math
 import os
 from collections import defaultdict
 import bson
+from werkzeug.utils import secure_filename
+import pandas as pd
 from config import ConfigApp
 from flask_cors import CORS
 from functools import wraps
@@ -490,24 +492,44 @@ def download_file(collection_name):
 def import_db():
     import_db_form = ImportDBForm()
     if import_db_form.validate_on_submit():
-        # collection_name = import_db_form.collection_name.data
         file = import_db_form.file.data
-        file_name_with_extension = file.filename
-        file_name = os.path.splitext(file_name_with_extension)[0]
-        # print(file_name)
+        file_name_with_extension = secure_filename(file.filename)
+        file_name, file_extension = os.path.splitext(file_name_with_extension)
+
         try:
-            data = json.load(file)
-            data = convert_oid(data)  # Convert ObjectId if necessary
+            # Check if the collection already exists
             if file_name in get_db_collection_names(sys_collections_included=1):
                 flash(f'این مجموعه داده از قبل وجود دارد.', 'warning')
-            else:
+                return redirect(url_for('admin_db_management'))
+
+            # Handle JSON file
+            if file_extension.lower() == '.json':
+                data = json.load(file)
+                data = convert_oid(data)  # Convert ObjectId if necessary
                 import_db_collection(current_user.username, file_name, data)
                 flash(f'مجموعه داده {file_name} با موفقیت به دیتابیس اضافه شد.', 'success')
+
+            # Handle CSV file
+            elif file_extension.lower() == '.csv':
+                data = []
+                print(1)
+                df = pd.read_csv(file)
+                data = df.to_dict(orient='records')
+                print(2)
+                import_db_collection(current_user.username, file_name, data)
+                flash(f'مجموعه داده {file_name} با موفقیت به دیتابیس اضافه شد.', 'success')
+
+            else:
+                flash('فرمت فایل پشتیبانی نمی‌شود. فقط JSON و CSV مجاز هستند.', 'danger')
+                return redirect(url_for('admin_db_management'))
+
         except Exception as e:
             flash(f'بارگذاری ناموفق: {e}', 'danger')
-        return redirect(url_for('admin_db_management'))
+            return redirect(url_for('admin_db_management'))
+
     else:
         flash('بارگذاری ناموفق!', 'danger')
+
     return redirect(url_for('admin_db_management'))
 
 

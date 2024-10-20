@@ -48,7 +48,7 @@ class ExtractDBForm(FlaskForm):
 
 class ImportDBForm(FlaskForm):
     # collection_name = SelectField('نام مجموعه', choices=models.get_db_collection_names(), validators=[DataRequired()])
-    file = FileField('فایل JSON', validators=[DataRequired()])
+    file = FileField('فایل JSON/CSV', validators=[DataRequired()])
     submit = SubmitField('افزودن مجموعه داده')
 
 
@@ -101,6 +101,7 @@ class SetDataConfigForm(FlaskForm):
                                   NumberRange(min=1, message="تعداد برچسب‌های پیش فرض ۱ است.")])
     new_option = StringField('افزودن برچسب جدید: ')
     add_button = SubmitField('افزودن')
+    remove_button = SubmitField('حذف')
 
 
 class AddAverageLabelForm(FlaskForm):
@@ -110,7 +111,7 @@ class AddAverageLabelForm(FlaskForm):
 
 class AddDataToCollectionForm(FlaskForm):
     data_collection = SelectField('مجموعه داده مورد نظر را انتخاب کنید:', choices=get_db_collection_names(), validators=[DataRequired()])
-    file = FileField('فایل JSON:', validators=[DataRequired()])
+    file = FileField('فایل CSV/JSON:', validators=[DataRequired()])
     submit = SubmitField('افزودن داده')
 
 

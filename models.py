@@ -139,15 +139,19 @@ def rename_collection_if_exist(collection_name):
 
 
 def import_db_collection(username, collection_name, data):
+    # Process the data to wrap each row in a "data" key
+    processed_data = [{"data": row} for row in data]
+
+    # Add processed dataset to the collection
+    processed_data = convert_oid(processed_data)  # Convert ObjectId if necessary
+    db[collection_name].insert_many(processed_data)
+
     # Update the user's collections in the "users" collection
     db.users.update_one(
         {'username': username},
         {'$addToSet': {'collections': collection_name}}
-        # Add the collection name if it's not already present, add collaction name in user profile
+        # Add the collection name if it's not already present, add collection name in user profile
     )
-    # Add dataset to db
-    data = convert_oid(data)
-    db[collection_name].insert_many(data)
 
     # Set initial configs for new dataset
     ConfigDB.update_data_labels(collection_name, [])
@@ -302,9 +306,6 @@ def calculate_and_set_average_label(collection_name):
         return False
 
 
-# calculate_and_set_average_label("data_old")
-
-
 def get_recent_labels(username, collection_name, limit=10):
     # collections = get_user_collection(username)
     collection = db[collection_name]
@@ -424,7 +425,9 @@ def get_data_states(user):
 
 def insert_data_into_collection(collection_name, data):
     try:
-        result = db[collection_name].insert_many(data)
+        # Process the data to wrap each row in a "data" key
+        processed_data = [{"data": row} for row in data]
+        result = db[collection_name].insert_many(processed_data)
         return result.inserted_ids
     except Exception as e:
         raise Exception(f"Error inserting data into collection {collection_name}: {str(e)}")
