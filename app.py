@@ -21,7 +21,7 @@ from models import find_user, add_user, check_password, find_user_by_id, remove_
     rename_collection_if_exist, get_user_labels, get_db_collection_names, get_user_collection, \
     calculate_and_set_average_label, get_recent_labels, update_label, get_label_options, get_collection_users, \
     get_user_role, get_top_users, get_data_states, set_data_state, insert_data_into_collection, \
-    assign_collection_to_user, get_supervisor_s_users, remove_data_collection
+    assign_collection_to_user, get_supervisor_s_users, remove_data_collection, remove_conflicted_row
 from extensions import sanitize_input, generate_captcha, clear_old_captchas  # , limiter
 # Import the api.py to include API routes
 import api
@@ -262,7 +262,7 @@ def admin_report():
     # username = None
     if report_task_form.validate_on_submit():
         username = report_task_form.username.data
-        if 'labels' in request.form:
+        if 'individual_report' in request.form:
             number_of_labels, consensus_degree, label_percentage = get_user_performance(username, collection)
             report_data = {
                 'type': 'labels',
@@ -271,7 +271,7 @@ def admin_report():
                 'label_percentage': label_percentage,
                 'consensus_degree': consensus_degree
             }
-        if 'data' in request.form:
+        if 'data_labels' in request.form:
             rows, total_rows = get_user_labels(username, collection, page, per_page)
             total_pages = math.ceil(total_rows / per_page)
             report_data = {
@@ -300,7 +300,7 @@ def admin_report():
         username = request.args.get('username')
         report_task_form.username.data = username
         if username:
-            rows, total_rows = get_user_labels(username, page, per_page)
+            rows, total_rows = get_user_labels(username,collection, page, per_page)
             total_pages = math.ceil(total_rows / per_page)
             report_data = {
                 'type': 'data',
@@ -419,6 +419,29 @@ def admin_db_management():
             else:
                 flash('Failed to update data config. Form is not validate_on_submit', 'danger')
 
+        elif 'remove_row' in request.form:
+            collection = request.form.get('hidden_collection')  # Retrieve collection from hidden field
+            conflict_search_form.data_collection.data = collection  # Repopulate form field
+            conflict_search_form.set_label_choices(collection)  # Set label choices based on selected collection
+            threshold = float(request.form.get('hidden_threshold', 0.5))  # Retrieve the threshold from the hidden field
+            if conflict_search_form.validate_on_submit():
+                row_id = request.form.get('row_id')
+                if row_id:
+                    try:
+                        row_id = ObjectId(row_id)
+                        if remove_conflicted_row(collection, row_id):
+                            flash('داده با موفقیت حذف شد.', 'success')
+                        else:
+                            flash('Failed to remove data.', 'danger')
+                    except bson.errors.InvalidId:
+                        flash('Invalid row ID.', 'danger')
+                else:
+                    flash('No row ID provided.', 'danger')
+                conflict_row = get_first_conflict_row(collection,
+                                                      threshold)  # Retrieve the next conflict row with the threshold
+            else:
+                flash('Form validation failed.', 'danger')
+
         elif 'remove_collection' in request.form:
             if remove_data_collection_form.validate_on_submit():
                 collection = remove_data_collection_form.data_collection.data
@@ -467,10 +490,14 @@ def extract_db():
     extract_db_form = ExtractDBForm()
     if extract_db_form.validate_on_submit():
         collection_name = extract_db_form.collection_name.data
-        path = f'static/db/db_{collection_name}.json'
-        extract_db_collection(path, collection_name)
-        flash(f' دسته بندی {collection_name}  با موفقیت استخراج شد.', 'success')
-        return redirect(url_for('admin_db_management', extracted=True, collection_name=collection_name))
+        conflict_row = get_first_conflict_row(collection_name, 0.6)
+        if conflict_row == None:
+            path = f'static/db/db_{collection_name}.json'
+            extract_db_collection(path, collection_name)
+            flash(f' دسته بندی {collection_name}  با موفقیت استخراج شد.', 'success')
+            return redirect(url_for('admin_db_management', extracted=True, collection_name=collection_name))
+        else:
+            flash('برچسب های متناقض رفع نشده است!', 'danger')
     else:
         flash('Failed to extract database.', 'danger')
     return redirect(url_for('admin_db_management'))

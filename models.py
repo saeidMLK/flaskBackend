@@ -270,6 +270,12 @@ def set_admin_label_for_conflicts(collection_name, row_id, label):
     return result.modified_count == 1
 
 
+def remove_conflicted_row(collection_name, row_id):
+    collection = db[collection_name]
+    result = collection.delete_one({"_id": row_id})
+    return result.deleted_count == 1
+
+
 def set_data_configs(data_collection, labels, num_required_labels):
     # Convert the string to a Python list
     array_of_labels = json.loads(labels)

@@ -8,6 +8,7 @@
     --sidebar-color-hover: #2218a7;
     --left-sidebar-color: rgba(15, 8, 117, 0.5);
     --left-sidebar-color-sub-item: rgba(10, 5, 87, 0.2);
+    --content-sub-parts: rgba(160, 237, 253, 0.2)
 }
 
 .title {

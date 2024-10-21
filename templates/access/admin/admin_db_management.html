@@ -10,49 +10,49 @@
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
                            href="{{ url_for('admin_db_management') }}#conflict_search"
-                           style="padding: 10px; margin-bottom: 5px;">
+                           style="padding: 10px; margin-bottom: 5px;" data-target="conflict_search">
                             رفع تناقض در برچسب ها
                         </a>
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
                            href="{{ url_for('admin_db_management') }}#add_avg_label"
-                           style="padding: 10px; margin-bottom: 5px;">
+                           style="padding: 10px; margin-bottom: 5px;" data-target="add_avg_label">
                             افزودن برچسب تجمعی
                         </a>
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
                            href="{{ url_for('admin_db_management') }}#extract_data"
-                           style="padding: 10px; margin-bottom: 5px;">
+                           style="padding: 10px; margin-bottom: 5px;" data-target="extract_data">
                             استخراج پایگاه داده
                         </a>
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
                            href="{{ url_for('admin_db_management') }}#add_data"
-                           style="padding: 10px; margin-bottom: 5px;">
+                           style="padding: 10px; margin-bottom: 5px;" data-target="add_data">
                             درج یک مجموعه داده
                         </a>
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
                            href="{{ url_for('admin_db_management') }}#add_to_collection"
-                           style="padding: 10px; margin-bottom: 5px;">
+                           style="padding: 10px; margin-bottom: 5px;" data-target="add_to_collection">
                             افزودن داده به یک مجموعه داده
                         </a>
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
                            href="{{ url_for('admin_db_management') }}#add_labels"
-                           style="padding: 10px; margin-bottom: 5px;">
+                           style="padding: 10px; margin-bottom: 5px;" data-target="add_labels">
                             اختصاص برچسب برای داده ها
                         </a>
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
                            href="{{ url_for('admin_db_management') }}#remove_data_collection"
-                           style="padding: 10px; margin-bottom: 5px;">
+                           style="padding: 10px; margin-bottom: 5px;" data-target="remove_data_collection">
                             حذف مجموعه داده
                         </a>
                     </li>
@@ -73,231 +73,255 @@
 {% block content %}
     <div class="halves" style="max-width: 100%">
         <div class="half_right input-box" style="max-width: 75%">
+            <h2 class="title" style="margin-bottom: 40px">مدیریت پایگاه داده</h2>
+            <div id="conflict_search"
+                 style="margin: -10px -12px -15px -20px; padding: 20px; border-radius: 0 10px 10px 0">
+                <form action="{{ url_for('admin_db_management') }}" method="post"
+                      onsubmit="updateThresholdHiddenField()" class="input-box">
+                    <h5>رفع تناقض در برچسب ها</h5>
+                    {{ conflict_search_form.hidden_tag() }}
+                    <div class="form-group"
+                         style=" display:flex; justify-content:space-between; flex-direction:row-reverse; margin: 25px 20px 0 0">
+                        <input type="range" class="form-range" id="threshold" name="threshold" min="0.1" max="1"
+                               step="0.1"
+                               value="{{ threshold }}" oninput="this.nextElementSibling.value = this.value"
+                               style="width: 38%;">
+                        <output>{{ threshold }}</output>
+                        <label for="threshold">حد آستانه تناقض برای برچسب‌ها:</label>
 
-            <h2 class="title">مدیریت پایگاه داده</h2>
-
-            <form action="{{ url_for('admin_db_management') }}" method="post" onsubmit="updateThresholdHiddenField()"
-                  class="input-box">
-                <h5 id="conflict_search" style="margin-top: 40px">رفع تناقض در برچسب ها</h5>
-                {{ conflict_search_form.hidden_tag() }}
-                <div class="form-group"
-                     style=" display:flex; justify-content:space-between; flex-direction:row-reverse; margin: 25px 20px 0 0">
-                    <input type="range" class="form-range" id="threshold" name="threshold" min="0.1" max="1" step="0.1"
-                           value="{{ threshold }}" oninput="this.nextElementSibling.value = this.value"
-                           style="width: 38%;">
-                    <output>{{ threshold }}</output>
-                    <label for="threshold">حد آستانه تناقض برای برچسب‌ها:</label>
-
-                </div>
-                <div class="form-group" style="margin-right: 20px; margin-top: 20px">
-                    <label for="collection_name">مجموعه داده مورد نظر را انتخاب کنید:</label>
-                </div>
-                <div style="display: flex; align-items: center; width: 100%; padding-right: 20px;">
-                    {{ conflict_search_form.data_collection(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
-                    <input type="hidden" id="hiddenThreshold" name="hidden_threshold" value="{{ threshold }}">
-                    <button type="submit" name="search" class="btn btn-success"
-                            style="width: 38%">
-                        یافتن داده متناقض
-                    </button>
-                </div>
-            </form>
-            <div style="margin-right: 20px">
-                {% if conflict_row %}
-                    <p style="padding-top: 30px; margin-bottom: 5px">اولین داده متناقض:</p>
-                    <table class="table table-striped">
-                        <thead>
-                        <tr>
-                            <th>داده</th>
-                            <th>برچسب‌ها</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td>
-                                {% if conflict_row['data'].items %}
-                                    <!-- Handle the case where 'data' is a dictionary -->
-                                    <ul>
-                                        {% for key, value in conflict_row['data'].items() %}
-                                            <li><strong>{{ key }}:</strong> {{ value }}</li>
-                                        {% endfor %}
-                                    </ul>
-                                {% else %}
-                                    <!-- Handle the case where 'data' is a string -->
-                                    <strong>{{ conflict_row['data'] }}</strong>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% for key, value in conflict_row['label'].items() %}
-                                    <strong>{{ key }}:</strong> {{ value }}{% if not loop.last %}<br>{% endif %}
-                                {% endfor %}
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                    <form action="{{ url_for('admin_db_management') }}" method="post">
-                        {{ conflict_search_form.hidden_tag() }}
-                        <p>برچسب مناسب را انتخاب کنید: </p>
-                        <input type="hidden" name="row_id" value="{{ conflict_row['_id'] }}">
-                        <div style="display: flex; align-items: center; width: 100%;">
-                            {{ conflict_search_form.label(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
-                            <input type="hidden" name="hidden_threshold" value="{{ threshold }}">
-                            <input type="hidden" name="hidden_collection"
-                                   value="{{ conflict_search_form.data_collection.data }}">
-                            <button type="submit" name="set_label" class="btn btn-danger btn-success"
-                                    style=" width:38%;">
-                                افزودن برچسب
-                            </button>
-                        </div>
-                    </form>
-                {% else %}
-                    {% if request.method == 'POST' %}
-                        <p style="margin-top: 15px">هیچ داده متناقضی یافت نشد!</p>
+                    </div>
+                    <div class="form-group" style="margin-right: 20px; margin-top: 20px">
+                        <label for="collection_name">مجموعه داده مورد نظر را انتخاب کنید:</label>
+                    </div>
+                    <div style="display: flex; align-items: center; width: 100%; padding-right: 20px;">
+                        {{ conflict_search_form.data_collection(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
+                        <input type="hidden" id="hiddenThreshold" name="hidden_threshold" value="{{ threshold }}">
+                        <button type="submit" name="search" class="btn btn-success"
+                                style="width: 38%">
+                            یافتن داده متناقض
+                        </button>
+                    </div>
+                </form>
+                <div style="margin-right: 20px">
+                    {% if conflict_row %}
+                        <p style="padding-top: 30px; margin-bottom: 5px">اولین داده متناقض:</p>
+                        <table class="table table-striped">
+                            <thead>
+                            <tr>
+                                <th>داده</th>
+                                <th>برچسب‌ها</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <td>
+                                    {% if conflict_row['data'].items %}
+                                        <!-- Handle the case where 'data' is a dictionary -->
+                                        <ul>
+                                            {% for key, value in conflict_row['data'].items() %}
+                                                <li><strong>{{ key }}:</strong> {{ value }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <!-- Handle the case where 'data' is a string -->
+                                        <strong>{{ conflict_row['data'] }}</strong>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% for key, value in conflict_row['label'].items() %}
+                                        <strong>{{ key }}:</strong> {{ value }}{% if not loop.last %}<br>{% endif %}
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                        <form action="{{ url_for('admin_db_management') }}" method="post">
+                            {{ conflict_search_form.hidden_tag() }}
+                            <p>برچسب مناسب را انتخاب کنید: </p>
+                            <input type="hidden" name="row_id" value="{{ conflict_row['_id'] }}">
+                            <div style="display: flex; align-items: center; width: 100%;">
+                                {{ conflict_search_form.label(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
+                                <input type="hidden" name="hidden_threshold" value="{{ threshold }}">
+                                <input type="hidden" name="hidden_collection"
+                                       value="{{ conflict_search_form.data_collection.data }}">
+                                <button type="submit" name="set_label" class="btn btn-success" style=" width:38%;">
+                                    افزودن برچسب
+                                </button>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                                <button type="submit" name="remove_row" class="btn btn-danger btn-success"
+                                        style="width:38%;">
+                                    حذف داده
+                                </button>
+                            </div>
+                        </form>
+                    {% else %}
+                        {% if request.method == 'POST' %}
+                            <p style="margin-top: 15px">هیچ داده متناقضی یافت نشد!</p>
+                        {% endif %}
                     {% endif %}
+                </div>
+            </div>
+
+            <div id="add_avg_label"
+                 style="margin: 80px -12px -15px -20px; padding: 20px; border-radius: 0 10px 10px 0;">
+                <h5 style="">افزودن برچسب تجمعی</h5>
+                <form action="{{ url_for('add_average_label') }}" method="post" style="margin-right: 20px">
+                    {{ add_average_label_form.hidden_tag() }}
+                    <div class="form-group">
+                        <label for="collection_name">مجموعه مورد نظر را انتخاب کنید:</label>
+                    </div>
+                    <div style="display: flex; align-items: center; width: 100%;">
+                        {{ add_average_label_form.data_collection(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
+                        {{ add_average_label_form.set_average_label(class="btn btn-success", style="width:38%; margin-top: 10px") }}
+                    </div>
+                </form>
+            </div>
+
+            <div id="extract_data"
+                 style="margin: 80px -12px -15px -20px; padding: 20px; border-radius: 0 10px 10px 0;">
+                <h5>استخراج پایگاه داده</h5>
+                <form action="{{ url_for('extract_db') }}" method="post" style="margin-right: 20px">
+                    <label for="collection_name" style="white-space: nowrap; margin-top: 10px">
+                        مجموعه مورد نظر را انتخاب کنید:
+                    </label>
+                    <div style="display: flex; align-items: center; width: 100%;">
+                        {{ extract_db_form.hidden_tag() }}
+                        {{ extract_db_form.collection_name(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
+                        {{ extract_db_form.submit(class="btn btn-success", style="width:38%") }}
+                    </div>
+                    <p style="font-size: 12px; margin-top:10px">برای استخراج پایگاه داده لازم است ابتدا تمام برچسب های
+                        متناقض با حداقل حد آستانه 0.6 رفع شود.</p>
+                </form>
+
+                {% if extracted %}
+                    <div style="display: flex; justify-content: flex-end; margin-right: 20px;">
+                        <a href="{{ url_for('download_file', collection_name=collection_name) }}"
+                           class="btn btn-success"
+                           style="background:#37c9da; width: 38%;">دانلود پایگاه داده استخراج شده.</a>
+                    </div>
                 {% endif %}
             </div>
 
-            <h5 id="add_avg_label" style="margin-top: 80px">افزودن برچسب تجمعی</h5>
-            <form action="{{ url_for('add_average_label') }}" method="post" style="margin-right: 20px">
-                {{ add_average_label_form.hidden_tag() }}
-                <div class="form-group">
-                    <label for="collection_name">مجموعه مورد نظر را انتخاب کنید:</label>
-                </div>
-                <div style="display: flex; align-items: center; width: 100%;">
-                    {{ add_average_label_form.data_collection(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
-                    {{ add_average_label_form.set_average_label(class="btn btn-success", style="width:38%; margin-top: 10px") }}
-                </div>
-            </form>
+            <div id="add_data"
+                 style="margin: 80px -12px -15px -20px; padding: 20px; border-radius: 0 10px 10px 0;">
+                <h5>درج یک مجموعه داده</h5>
+                <form action="{{ url_for('import_db') }}" method="post" enctype="multipart/form-data"
+                      style="margin-right: 20px">
+                    {{ import_db_form.hidden_tag() }}
+                    <div class="form-group" style="padding-top:10px ">
+                        <label for="file"> یک عنوان برای مجموعه داده وارد کنید:</label>
+                    </div>
+                    <div style="display: flex; align-items: center; width: 100%;">
+                        {{ import_db_form.title(class="form-control", style="max-width:62%; flex-grow: 1; margin-left: 10px;") }}
+                    </div>
+                    <div class="form-group" style="padding-top:10px ">
+                        <label for="file"> فایل CSV/JSON:</label>
+                    </div>
+                    <div style="display: flex; align-items: center; width: 100%;">
+                        {{ import_db_form.file(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
+                        {{ import_db_form.submit(class="btn btn-success", style="width:38%;") }}
+                    </div>
+                </form>
+            </div>
 
+            <div id="add_to_collection"
+                 style="margin: 80px -12px -15px -20px; padding: 20px; border-radius: 0 10px 10px 0;">
+                <h5>افزودن داده به یک مجموعه داده</h5>
+                <form action="{{ url_for('add_data_to_collection') }}" method="post" enctype="multipart/form-data"
+                      style="margin-right: 20px">
+                    {{ add_data_to_collection_form.hidden_tag() }}
+                    <div class="form-group" style="display: flex; align-items: center; width: 100%; margin-top: 10px ">
+                        <label for="collection_name" style="width:62%; flex-grow: 1; margin-left: 10px;">
+                            {{ add_data_to_collection_form.data_collection.label }}
+                        </label>
+                        {{ add_data_to_collection_form.data_collection(class="form-control",  style="width:38%;") }}
+                    </div>
+                    <div class="form-group" style="padding-top:10px ">
+                        <label for="file">
+                            {{ add_data_to_collection_form.file.label }}
+                        </label>
+                    </div>
+                    <div style="display: flex; align-items: center; width: 100%;">
+                        {{ add_data_to_collection_form.file(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
+                        {{ add_data_to_collection_form.submit(class="btn btn-success", style="width:38%;") }}
+                    </div>
+                </form>
+            </div>
 
-            <h5 id="extract_data" style="margin-top: 80px">استخراج پایگاه داده</h5>
-            <form action="{{ url_for('extract_db') }}" method="post" style="margin-right: 20px">
-                <label for="collection_name" style="white-space: nowrap; margin-top: 10px">
-                    مجموعه مورد نظر را انتخاب کنید:
-                </label>
-                <div style="display: flex; align-items: center; width: 100%;">
-                    {{ extract_db_form.hidden_tag() }}
-                    {{ extract_db_form.collection_name(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
-                    {{ extract_db_form.submit(class="btn btn-success", style="width:38%") }}
-                </div>
-            </form>
+            <div id="add_labels"
+                 style="margin: 80px -12px -15px -20px; padding: 20px; border-radius: 0 10px 10px 0;">
+                <h5>اختصاص برچسب برای داده ها</h5>
+                <form action="{{ url_for('admin_db_management') }}" method="post" id="optionForm"
+                      onsubmit="updateHiddenField()" style="margin-right: 20px">
+                    {{ set_data_config_form.hidden_tag() }}
+                    <div class="form-group" style="display: flex; align-items: center; width: 100%; margin-top: 10px ">
+                        <label for="collection_name" style="width:62%; flex-grow: 1; margin-left: 10px;">مجموعه داده
+                            مورد
+                            نظر را انتخاب کنید:</label>
+                        {{ set_data_config_form.data_collection(class="form-control",  style="width:38%;") }}
+                    </div>
+                    <div style="display: flex; align-items: center; width: 100%;margin-top: 10px">
+                        {{ set_data_config_form.num_required_labels.label(style="width:62%; flex-grow: 1; margin-left: 10px;") }}
+                        {{ set_data_config_form.num_required_labels(class='form-control', style="width:38%;") }}
+                    </div>
+                    {{ set_data_config_form.labels(id='stringfield') }}  <!-- Add the hidden field here -->
+                    <div style="display: flex; align-items: center; width: 100%; margin-top: 10px">
+                        {{ set_data_config_form.new_option.label(style="width:35%; padding-top: 5px") }}
+                        {{ set_data_config_form.new_option(class="form-control", style="margin-right: 10px; width:46%;", size=10) }}
+                        <button type="button" onclick="addOption()" class="btn btn-success"
+                                style="width:19%; margin-right: 10px;">افزودن
+                        </button>
+                    </div>
+                    <div style="display: flex; align-items: center; width: 100%; margin-top: 10px">
+                        <select class="form-control" id="dynamicSelect" name="dynamicSelect"
+                                style="flex-grow: 1; border: 1px solid #ccc; width: 81%">
+                            <option value="" disabled selected>اینجا برچسب های مورد نظر می باشند:</option>
+                        </select>
+                        <button type="button" onclick="removeOption()" class="btn btn-success"
+                                style="width:19%; margin-right: 10px;">حذف
+                        </button>
+                    </div>
 
-            {% if extracted %}
-                <div style="display: flex; justify-content: flex-end; margin-top: 20px; margin-right: 20px;">
-                    <a href="{{ url_for('download_file', collection_name=collection_name) }}"
-                       class="btn btn-success"
-                       style="background:#37c9da; width: 38%;">دانلود پایگاه داده استخراج شده.</a>
-                </div>
-            {% endif %}
+                    <div style="display: flex; justify-content: flex-end; margin-top: 20px; margin-right: 20px;">
+                        <button type="submit" name="save_labels" class="btn btn-danger"
+                                style="white-space: nowrap; width: 38%;">
+                            اعمال تنظیمات برچسب
+                        </button>
+                    </div>
 
-            <h5 id="add_data" style="margin-top: 80px">درج یک مجموعه داده</h5>
-            <form action="{{ url_for('import_db') }}" method="post" enctype="multipart/form-data"
-                  style="margin-right: 20px">
-                {{ import_db_form.hidden_tag() }}
-                <div class="form-group" style="padding-top:10px ">
-                    <label for="file"> یک عنوان برای مجموعه داده وارد کنید:</label>
-                </div>
-                <div style="display: flex; align-items: center; width: 100%;">
-                    {{ import_db_form.title(class="form-control", style="max-width:62%; flex-grow: 1; margin-left: 10px;") }}
-                </div>
-                <div class="form-group" style="padding-top:10px ">
-                    <label for="file"> فایل CSV/JSON:</label>
-                </div>
-                <div style="display: flex; align-items: center; width: 100%;">
-                    {{ import_db_form.file(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
-                    {{ import_db_form.submit(class="btn btn-success", style="width:38%;") }}
-                </div>
-            </form>
+                </form>
+            </div>
 
-            <h5 id="add_to_collection" style="margin-top: 80px">افزودن داده به یک مجموعه داده</h5>
-            <form action="{{ url_for('add_data_to_collection') }}" method="post" enctype="multipart/form-data"
-                  style="margin-right: 20px">
-                {{ add_data_to_collection_form.hidden_tag() }}
-                <div class="form-group" style="display: flex; align-items: center; width: 100%; margin-top: 10px ">
-                    <label for="collection_name" style="width:62%; flex-grow: 1; margin-left: 10px;">
-                        {{ add_data_to_collection_form.data_collection.label }}
-                    </label>
-                    {{ add_data_to_collection_form.data_collection(class="form-control",  style="width:38%;") }}
-                </div>
-                <div class="form-group" style="padding-top:10px ">
-                    <label for="file">
-                        {{ add_data_to_collection_form.file.label }}
-                    </label>
-                </div>
-                <div style="display: flex; align-items: center; width: 100%;">
-                    {{ add_data_to_collection_form.file(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
-                    {{ add_data_to_collection_form.submit(class="btn btn-success", style="width:38%;") }}
-                </div>
-            </form>
+            <div id="remove_data_collection"
+                 style="margin: 80px -12px -15px -20px; padding: 20px; border-radius: 0 10px 10px 0;">
+                <h5>حذف یک مجموعه داده از پایگاه داده ها</h5>
+                <form action="{{ url_for('admin_db_management') }}" method="post" style="margin-right: 20px"
+                      onsubmit="return confirmDelete();">
+                    {{ remove_data_collection_form.hidden_tag() }}
+                    <div class="form-group">
+                        <label for="collection_name">مجموعه مورد نظر را انتخاب کنید:</label>
+                    </div>
+                    <div style="display: flex; align-items: center; width: 100%;">
+                        {{ remove_data_collection_form.data_collection(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
+                        <button type="submit" name="remove_collection" class="btn btn-danger"
+                                style="width: 38%">
+                            حذف مجموعه داده!
+                        </button>
+                    </div>
+                    {#                <div style="display: flex; align-items: center; margin-top:10px">#}
+                    {#                    {{ remove_data_collection_form.update_user_scores(style="width:5%; flex-grow: 1; margin-left: 10px;") }}#}
+                    {#                    <label for="update_user_scores" style="margin-left: 10px; width: 90%">بروزرسانی امتیازات#}
+                    {#                        کاربران</label>#}
+                    {#                </div>#}
+                    <p style="font-size: 12px; margin:10px 0 40px 0">با حذف داده تمامی امتیازاتی که کاربران از
+                        برچسب زدن این داده بدست آورده اند حذف می شود.</p>
+                </form>
+            </div>
 
-            <h5 id="add_labels" style="margin-top: 80px">اختصاص برچسب برای داده ها</h5>
-            <form action="{{ url_for('admin_db_management') }}" method="post" id="optionForm"
-                  onsubmit="updateHiddenField()" style="margin-right: 20px">
-                {{ set_data_config_form.hidden_tag() }}
-                <div class="form-group" style="display: flex; align-items: center; width: 100%; margin-top: 10px ">
-                    <label for="collection_name" style="width:62%; flex-grow: 1; margin-left: 10px;">مجموعه داده مورد
-                        نظر را انتخاب کنید:</label>
-                    {{ set_data_config_form.data_collection(class="form-control",  style="width:38%;") }}
-                </div>
-                <div style="display: flex; align-items: center; width: 100%;margin-top: 10px">
-                    {{ set_data_config_form.num_required_labels.label(style="width:62%; flex-grow: 1; margin-left: 10px;") }}
-                    {{ set_data_config_form.num_required_labels(class='form-control', style="width:38%;") }}
-                </div>
-                {{ set_data_config_form.labels(id='stringfield') }}  <!-- Add the hidden field here -->
-                <div style="display: flex; align-items: center; width: 100%; margin-top: 10px">
-                    {{ set_data_config_form.new_option.label(style="width:35%; padding-top: 5px") }}
-                    {{ set_data_config_form.new_option(class="form-control", style="margin-right: 10px; width:46%;", size=10) }}
-                    <button type="button" onclick="addOption()" class="btn btn-success"
-                            style="width:19%; margin-right: 10px;">افزودن
-                    </button>
-                </div>
-                <div style="display: flex; align-items: center; width: 100%; margin-top: 10px">
-                    <select class="form-control" id="dynamicSelect" name="dynamicSelect"
-                            style="flex-grow: 1; border: 1px solid #ccc; width: 81%">
-                        <option value="" disabled selected>اینجا برچسب های مورد نظر می باشند:</option>
-                    </select>
-                    <button type="button" onclick="removeOption()" class="btn btn-success"
-                            style="width:19%; margin-right: 10px;">حذف
-                    </button>
-                </div>
-
-                <div style="display: flex; justify-content: flex-end; margin-top: 20px; margin-right: 20px;">
-                    <button type="submit" name="save_labels" class="btn btn-danger"
-                            style="white-space: nowrap; width: 38%;">
-                        اعمال تنظیمات برچسب
-                    </button>
-                </div>
-
-            </form>
-
-
-            <h5 id="remove_data_collection" style="margin-top: 80px">حذف یک مجموعه داده از پایگاه داده ها</h5>
-            <form action="{{ url_for('admin_db_management') }}" method="post" style="margin-right: 20px"
-                  onsubmit="return confirmDelete();">
-                {{ remove_data_collection_form.hidden_tag() }}
-                <div class="form-group">
-                    <label for="collection_name">مجموعه مورد نظر را انتخاب کنید:</label>
-                </div>
-                <div style="display: flex; align-items: center; width: 100%;">
-                    {{ remove_data_collection_form.data_collection(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
-                    <button type="submit" name="remove_collection" class="btn btn-danger"
-                            style="width: 38%">
-                        حذف مجموعه داده!
-                    </button>
-                </div>
-                {#                <div style="display: flex; align-items: center; margin-top:10px">#}
-                {#                    {{ remove_data_collection_form.update_user_scores(style="width:5%; flex-grow: 1; margin-left: 10px;") }}#}
-                {#                    <label for="update_user_scores" style="margin-left: 10px; width: 90%">بروزرسانی امتیازات#}
-                {#                        کاربران</label>#}
-                {#                </div>#}
-                <p style="font-size: 12px; margin:10px 0 40px 0">با حذف داده تمامی امتیازاتی که کاربران از
-                    برچسب زدن این داده بدست آورده اند حذف می شود.</p>
-            </form>
-
-            <script type="text/javascript">
-
-            </script>
-
+            <script type="text/javascript"> </script>
             <script src="{{ url_for('static', filename='js/admin_db.js') }}"></script>
+            <script src="{{ url_for('static', filename='js/content_sub_part_background_color.js') }}"></script>
 
         </div>
 
