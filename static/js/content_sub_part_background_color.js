@@ -16,10 +16,7 @@
                 // Get the new target section and apply the background color
                 const targetSection = document.getElementById(targetId);
                 if (targetSection) {
-                    targetSection.style.backgroundColor = 'lightyellow';  // New background color on click
-                    // Use the CSS variable for the highlight color
-                    // {#const highlightColor = getCssVariableValue('--content-sub-parts');#}
-                    // {#targetSection.style.backgroundColor = highlightColor;#}
+                    targetSection.style.backgroundColor = 'rgba(148,210,210,0.5)';// 'lightyellow';  // New background color on click
                 }
 
                 // Update the previousSection to the currently clicked section

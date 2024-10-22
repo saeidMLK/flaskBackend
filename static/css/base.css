@@ -1,14 +1,42 @@
+/*:root {*/
+/*    --primary-header-color: #031148;*/
+/*    --secondary-header-color: #241c94;*/
+/*    --accent-color: #e74c3c;*/
+/*    --background-color: rgba(84, 87, 87, 0.56);*/
+/*    --text-color: #2c3e50;*/
+/*    --sidebar-color: #2e86c1;*/
+/*    --sidebar-color-hover: #2218a7;*/
+/*    --left-sidebar-color: rgba(15, 8, 117, 0.5);*/
+/*    --left-sidebar-color-sub-item: rgba(10, 5, 87, 0.2);*/
+/*    --content-sub-parts: rgba(160, 237, 253, 0.2)*/
+/*}*/
+
+    /*--primary-header-color: #0A2463; !* Midnight Blue *!*/
 :root {
-    --primary-header-color: #031148;
-    --secondary-header-color: #241c94;
-    --accent-color: #e74c3c;
-    --background-color: rgba(84, 87, 87, 0.56);
-    --text-color: #2c3e50;
-    --sidebar-color: #2e86c1;
-    --sidebar-color-hover: #2218a7;
-    --left-sidebar-color: rgba(15, 8, 117, 0.5);
-    --left-sidebar-color-sub-item: rgba(10, 5, 87, 0.2);
-    --content-sub-parts: rgba(160, 237, 253, 0.2)
+    --primary-header-color: #002949; /* Midnight Blue */
+        /*--primary-header-color: #0A2463; !* Midnight Blue *!*/
+    --secondary-header-color: #0D3B66; /* Deep Royal Blue */
+    --accent-color: #F95738; /* Coral Red */
+    --background-color: rgba(84, 87, 87, 0.56);/* Soft Gray */
+    --text-color: #333333; /* Dark Gray */
+    --sidebar-color: #1A759F; /* Medium Cyan Blue */
+    --sidebar-color-hover: #144A74; /* Dark Cyan Blue */
+    --left-sidebar-color: rgba(20, 74, 116, 0.6); /* Transparent Dark Cyan */
+    --left-sidebar-color-sub-item: rgba(20, 74, 116, 0.3); /* Transparent Light Cyan */
+    --content-sub-parts: rgba(230, 206, 244, 0.2); /* Pale Lavender */
+
+
+    /* Regular Button Colors */
+--button-color: #0096C7; /* Sky Blue */
+--button-hover-color: #0077B6; /* Medium Blue */
+
+/* Danger Button Colors */
+--danger-button-color: #D9534F; /* Crimson Red */
+--danger-button-hover-color: #C9302C; /* Dark Red */
+/* Alternative Danger Button Colors */
+--danger-button-color: #d9352c; /* Bright Red */
+--danger-button-hover-color: #D93025; /* Dark Bright Red */
+
 }
 
 .title {
