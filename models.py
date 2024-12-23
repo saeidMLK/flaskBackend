@@ -157,6 +157,9 @@ def import_db_collection(username, collection_name, data):
     ConfigDB.update_data_labels(collection_name, [])
     ConfigDB.set_num_labels(collection_name, 0)
     ConfigDB.set_num_required_labels(collection_name, 1)
+    db['config'].update_one(
+        {'collection': collection_name},  # Match the document
+        {'$set': {'finished_by': []}})
     return set_data_state(collection_name)
 
 
@@ -178,15 +181,53 @@ def get_collection_users(collection_name):
         return None
 
 
+# def read_one_row_of_data(username, collection_name):
+#     # collection_name = get_user_collection(username)
+#     collection = db[collection_name]
+#     # Iterate through each document in the collection
+#     for row in collection.find():
+#         # Check if the name does not exist as a key within the "label" object
+#         if username not in row.get("label", {}):
+#             return row
+#     # If no such row is found, return None
+#     return None
 def read_one_row_of_data(username, collection_name):
-    # collection_name = get_user_collection(username)
     collection = db[collection_name]
-    # Iterate through each document in the collection
-    for row in collection.find():
-        # Check if the name does not exist as a key within the "label" object
+
+    # Find all documents and annotate with the number of labels
+    rows = collection.find()
+    rows_with_label_count = [
+        (row, len(row.get("label", {}))) for row in rows
+    ]
+
+    # Sort rows by the number of labels in ascending order
+    sorted_rows = sorted(rows_with_label_count, key=lambda x: x[1])
+
+    # Iterate through sorted rows to find the one not labeled by the user
+    for row, label_count in sorted_rows:
         if username not in row.get("label", {}):
             return row
+
     # If no such row is found, return None
+    collection = db['config'].find_one({'collection': collection_name})
+    num_labels = collection['num_labels'] + 1
+
+    # Check if the field exists
+    if 'finished_by' in collection:
+        # Check if the value already exists in the field
+        if username not in collection['finished_by']:
+            # Add the new value to the field
+            db['config'].update_one(
+                {'collection': collection_name},  # Match the document
+                {'$push': {'finished_by': username}, '$set': {'num_labels': num_labels}}
+            )
+    else:
+        # Add the new field with the value
+        db['config'].update_one(
+            {'collection': collection_name},  # Match the document
+            {'$set': {'finished_by': username, 'num_labels': num_labels}}
+        )
+    set_data_state(collection_name)
     return None
 
 
@@ -208,6 +249,7 @@ def get_user_performance(username, collection_name):
     # collection_name = get_user_collection(username)
     collection = db[collection_name]
     total_rows = collection.count_documents({})  # Get the total number of rows in the collection
+
     for row in collection.find():
         # Retrieve the label dictionary for the current row
         label_dict = row.get("label", {})
@@ -336,68 +378,6 @@ def get_label_options(collection_name):
     return ConfigDB.get_data_labels(collection_name)
 
 
-def get_top_users():
-    collections = get_db_collection_names(0)
-    if collections is None:
-        collections = []
-    users = get_all_users()
-    categorized_users = defaultdict(list)
-
-    for user in users:
-        categorized_users[user.role].append(user.username)
-
-    user_data = defaultdict(
-        lambda: {'total_labels': 0, 'total_consensus': 0, 'collections_count': 0})  # To store data for each user
-
-    if categorized_users['user']:
-        for collection in collections:
-            for user in categorized_users['user']:
-                user_performance = get_user_performance(user, collection)
-                # Check if user_performance is valid before proceeding
-                if user_performance:
-                    number_of_labels = user_performance[0]
-                    consensus_degree = user_performance[1]
-                    # Add user data (username, number_of_labels, consensus_degree)
-                    # Update total labels and consensus for this user
-                    user_data[user]['total_labels'] += number_of_labels
-                    user_data[user]['total_consensus'] += consensus_degree
-                    user_data[user]['collections_count'] += 1
-                else:
-                    continue
-
-        # Now calculate the F-score based on total_labels and average_consensus for each user
-    ranked_users = []
-    for user, data in user_data.items():
-        total_labels = data['total_labels']
-        collections_count = data['collections_count']
-
-        # Calculate the average consensus degree
-        if collections_count > 0:
-            avg_consensus = data['total_consensus'] / collections_count
-        else:
-            avg_consensus = 0
-
-        # Calculate F-score using total_labels and avg_consensus
-        if total_labels + avg_consensus > 0:
-            f_score = 2 * (total_labels * avg_consensus) / (total_labels + avg_consensus)
-        else:
-            f_score = 0
-
-        score = int(total_labels * avg_consensus)
-
-        ranked_users.append({
-            'username': user,
-            'total_labels': total_labels,
-            'avg_consensus': avg_consensus,
-            'f_score': f_score,
-            'score': score
-        })
-
-    # Sort users based on F-score in descending order
-    ranked_users = sorted(ranked_users, key=lambda x: x['score'], reverse=True)
-    return ranked_users
-
-
 def set_data_state(collection_name):
     collection = db['config'].find_one({'collection': collection_name})
     num_required_labels = collection['num_required_labels']
@@ -425,6 +405,75 @@ def get_data_states(user):
         data_and_states[state].append(collection)
     return data_and_states
 
+
+def get_top_users():
+    collections = get_db_collection_names(0)
+    if collections is None:
+        collections = []
+    users = get_all_users()
+    categorized_users = defaultdict(list)
+
+    for user in users:
+        categorized_users[user.role].append(user.username)
+
+    user_data = defaultdict(
+        lambda: {'total_labels': 0, 'total_consensus': 0, 'collections_count': 0, 'collection_names': []})  # To store data for each user
+
+    if categorized_users['user']:
+        for collection in collections:
+            # check if collection have been labeled completely.
+            if collection in get_data_states('admin')['labeled']:
+                for user in categorized_users['user']:
+                    if user in db['config'].find_one({'collection': collection})['finished_by']:
+                        user_performance = get_user_performance(user, collection)
+                        # Check if user_performance is valid before proceeding
+                        if user_performance:
+                            number_of_labels = user_performance[0]
+                            consensus_degree = user_performance[1]
+                            # Add user data (username, number_of_labels, consensus_degree)
+                            # Update total labels and consensus for this user
+                            user_data[user]['total_labels'] += number_of_labels
+                            user_data[user]['total_consensus'] += consensus_degree
+                            user_data[user]['collections_count'] += 1
+                            user_data[user]['collection_names'].append(collection)
+                        else:
+                            continue
+                    else:
+                        continue
+            else:
+                continue
+
+        # Now calculate the F-score based on total_labels and average_consensus for each user
+    ranked_users = []
+    for user, data in user_data.items():
+        total_labels = data['total_labels']
+        collections_count = data['collections_count']
+
+        # Calculate the average consensus degree
+        if collections_count > 0:
+            avg_consensus = data['total_consensus'] / collections_count
+        else:
+            avg_consensus = 0
+
+        # Calculate F-score using total_labels and avg_consensus
+        if total_labels + avg_consensus > 0:
+            f_score = 2 * (total_labels * avg_consensus) / (total_labels + avg_consensus)
+        else:
+            f_score = 0
+
+        score = int(total_labels * (avg_consensus / 100))
+
+        ranked_users.append({
+            'username': user,
+            'total_labels': total_labels,
+            'avg_consensus': avg_consensus,
+            'f_score': f_score,
+            'score': score
+        })
+
+    # Sort users based on F-score in descending order
+    ranked_users = sorted(ranked_users, key=lambda x: x['score'], reverse=True)
+    return ranked_users
 
 def insert_data_into_collection(collection_name, data):
     try:

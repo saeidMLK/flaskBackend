@@ -1,11 +1,4 @@
-{% extends 'main/base.html' %}
-{% block title %}  صفحه مدیریت {% endblock %}
-{% block navitem_right %}{% endblock %}
-{% block navitem_left %}
-    <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('logout') }}">خروج</a>
-    </li>
-{% endblock %}
+{% extends 'access/supervisor/supervisor_base.html' %}
 
 {% block sidebar %}
     <div style="flex: 0 0 20%; background-color:var(--sidebar-color); border-radius: 0 10px 10px 0">
@@ -15,42 +8,42 @@
                 <ul class="navbar-nav flex-column w-100" style="padding-inline-start: 0;">
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
-                           href="{{ url_for('supervisor') }}#conflict_search"
+                           href="{{ url_for('supervisor_db_management') }}#conflict_search"
                            style="border: 1px solid #15482e; padding: 10px; margin-bottom: 5px;">
                             رفع تناقض در برچسب ها
                         </a>
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
-                           href="{{ url_for('supervisor') }}#add_avg_label"
+                           href="{{ url_for('supervisor_db_management') }}#add_avg_label"
                            style="border: 1px solid #15482e; padding: 10px; margin-bottom: 5px;">
                             افزودن برچسب تجمعی
                         </a>
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
-                           href="{{ url_for('supervisor') }}#extract_data"
+                           href="{{ url_for('supervisor_db_management') }}#extract_data"
                            style="border: 1px solid #15482e; padding: 10px; margin-bottom: 5px;">
                             استخراج پایگاه داده
                         </a>
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
-                           href="{{ url_for('supervisor') }}#add_data"
+                           href="{{ url_for('supervisor_db_management') }}#add_data"
                            style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
                             درج یک مجموعه داده
                         </a>
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
-                           href="{{ url_for('admin_db_management') }}#add_to_collection"
+                           href="{{ url_for('supervisor_db_management') }}#add_to_collection"
                            style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
                             افزودن داده به یک مجموعه داده
                         </a>
                     </li>
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
-                           href="{{ url_for('supervisor') }}#add_labels"
+                           href="{{ url_for('supervisor_db_management') }}#add_labels"
                            style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
                             اختصاص برچسب برای داده ها
                         </a>
@@ -75,7 +68,7 @@
         <div class="half_right input-box" style="max-width: 70%">
             <h2 class="title">مدیریت پایگاه داده</h2>
 
-            <form action="{{ url_for('supervisor') }}" method="post" onsubmit="updateThresholdHiddenField()"
+            <form action="{{ url_for('supervisor_db_management') }}" method="post" onsubmit="updateThresholdHiddenField()"
                   class="input-box">
                 <h5 id="conflict_search" style="margin-top: 40px">رفع تناقض در برچسب ها</h5>
                 {{ conflict_search_form.hidden_tag() }}
@@ -133,7 +126,7 @@
                         </tr>
                         </tbody>
                     </table>
-                    <form action="{{ url_for('supervisor') }}" method="post">
+                    <form action="{{ url_for('supervisor_db_management') }}" method="post">
                         {{ conflict_search_form.hidden_tag() }}
                         <p>برچسب مناسب را انتخاب کنید: </p>
                         <input type="hidden" name="row_id" value="{{ conflict_row['_id'] }}">
@@ -223,7 +216,7 @@
             </form>
 
             <h5 id="add_labels" style="margin-top: 80px">اختصاص برچسب برای داده ها</h5>
-            <form action="{{ url_for('supervisor') }}" method="post" id="optionForm"
+            <form action="{{ url_for('supervisor_db_management') }}" method="post" id="optionForm"
                   onsubmit="updateHiddenField()" style="margin-right: 20px">
                 {{ set_data_config_form.hidden_tag() }}
                 <div class="form-group" style="display: flex; align-items: center; width: 100%; margin-top: 10px ">

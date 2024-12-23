@@ -108,7 +108,9 @@ class SetDataConfigForm(FlaskForm):
 class AddAverageLabelForm(FlaskForm):
     data_collection = SelectField('مجموعه داده مورد نظر را انتخاب کنید:', choices=get_db_collection_names(), validators=[DataRequired()])
     set_average_label = SubmitField('افزودن برچسب تجمعی')
-
+    def set_data_collection_choices(self):
+        choices = get_db_collection_names()
+        self.data_collection.choices = choices
 
 class AddDataToCollectionForm(FlaskForm):
     data_collection = SelectField('مجموعه داده مورد نظر را انتخاب کنید:', choices=get_db_collection_names(), validators=[DataRequired()])

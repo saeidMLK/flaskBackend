@@ -243,11 +243,17 @@ def admin_report():
     if role == 'supervisor':
         collections = get_user_collection(current_user.username)
         report_task_form.collection.choices = [(name, name) for name in collections]
-        collection_0 = collections[0]
+        if collections:
+            collection_0 = collections[0]
+        else:
+            return jsonify({"error": "No collections available"}), 400
     else:
         collection_names_0 = get_db_collection_names(sys_collections_included=0)
         report_task_form.collection.choices = [(name, name) for name in collection_names_0]
-        collection_0 = collection_names_0[0]
+        if collection_names_0:
+            collection_0 = collection_names_0[0]
+        else:
+            return jsonify({"error": "No collections available"}), 400
 
     collection = report_task_form.collection.data or collection_0
 
@@ -300,7 +306,7 @@ def admin_report():
         username = request.args.get('username')
         report_task_form.username.data = username
         if username:
-            rows, total_rows = get_user_labels(username,collection, page, per_page)
+            rows, total_rows = get_user_labels(username, collection, page, per_page)
             total_pages = math.ceil(total_rows / per_page)
             report_data = {
                 'type': 'data',
@@ -343,6 +349,7 @@ def admin_db_management():
     import_db_form = ImportDBForm()
     extract_db_form = ExtractDBForm()
     add_average_label_form = AddAverageLabelForm()
+    add_average_label_form.set_data_collection_choices()
     conflict_search_form = ConflictSearchForm()
     set_data_config_form = SetDataConfigForm()
     add_data_to_collection_form = AddDataToCollectionForm()
@@ -351,11 +358,15 @@ def admin_db_management():
     if current_user.role == 'supervisor':
         collections = get_user_collection(current_user.username)
         extract_db_form.collection_name.choices = [(name, name) for name in collections]
+        for collection in collections:
+            set_data_state(collection)
         data_states = get_data_states(current_user.username)
     else:
         collections = get_db_collection_names(sys_collections_included=0)
         collection_names_1 = get_db_collection_names(sys_collections_included=1)
         extract_db_form.collection_name.choices = [(name, name) for name in collection_names_1]
+        for collection in collections:
+            set_data_state(collection)
         data_states = get_data_states('admin')
 
     add_average_label_form.data_collection.choices = [(name, name) for name in collections]
@@ -411,7 +422,6 @@ def admin_db_management():
                 data_collection = set_data_config_form.data_collection.data
                 num_required_labels = set_data_config_form.num_required_labels.data
                 if set_data_configs(data_collection, labels, num_required_labels):
-                    set_data_state(data_collection)
                     flash('تنظیمات داده با موفقیت بروزرسانی شدند.', 'success')
                     return redirect(url_for('admin_db_management'))
                 else:
@@ -473,6 +483,7 @@ def admin_db_management():
 @role_required('admin', 'supervisor')
 def add_average_label():
     add_average_label_form = AddAverageLabelForm()
+    add_average_label_form.set_data_collection_choices()
     if add_average_label_form.validate_on_submit():
         collection_name = add_average_label_form.data_collection.data
         if calculate_and_set_average_label(collection_name):
@@ -488,6 +499,7 @@ def add_average_label():
 @role_required('admin', 'supervisor')
 def extract_db():
     extract_db_form = ExtractDBForm()
+    extract_db_form.set_collections_choices(1)
     if extract_db_form.validate_on_submit():
         collection_name = extract_db_form.collection_name.data
         conflict_row = get_first_conflict_row(collection_name, 0.6)
