@@ -462,13 +462,14 @@ def get_top_users():
             f_score = 0
 
         score = int(total_labels * (avg_consensus / 100))
-
+        collections = data['collection_names']
         ranked_users.append({
             'username': user,
             'total_labels': total_labels,
             'avg_consensus': avg_consensus,
             'f_score': f_score,
-            'score': score
+            'score': score,
+            'collections': collections
         })
 
     # Sort users based on F-score in descending order

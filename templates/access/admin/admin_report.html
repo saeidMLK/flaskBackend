@@ -196,12 +196,19 @@
                 <ul class="navbar-nav flex-column w-100" style="padding-inline-start: 0;">
                     {% for user in top_users %}
                         <li class="nav-item w-100">
-                            <div style="margin-bottom: 10px">
-                                <option style="background-color: var(--left-sidebar-color-sub-item); color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 10px;">
-                                    {{ user.username }}
-                                    :
-                                    {{ user.score }}
-                                </option>
+                            <div style="margin-bottom: 10px; background-color: var(--left-sidebar-color-sub-item); color: rgba(255,255,255,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px;">
+
+{#                            <div style="margin-bottom: 10px">#}
+{#                                <option style="background-color: var(--left-sidebar-color-sub-item); color: rgba(255,255,255,0.85); display:flex; justify-content: center; padding: 10px;">#}
+                                    <span>
+                                        {{ user.username }}
+                                        :
+                                        {{ user.score }}
+                                    </span>
+                                    <span>
+                                        {{ user.collections | join(", ") }}
+                                    </span>
+{#                                </option>#}
                             </div>
                         </li>
                     {% endfor %}
