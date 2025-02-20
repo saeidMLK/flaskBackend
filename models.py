@@ -208,7 +208,8 @@ def read_one_row_of_data(username, collection_name):
         if username not in row.get("label", {}):
             return row
 
-    # If no such row is found, return None
+    # If no such row is found it means user finished labeling for this and increase num_labels
+    # , return None
     collection = db['config'].find_one({'collection': collection_name})
     num_labels = collection['num_labels'] + 1
 
@@ -417,7 +418,8 @@ def get_top_users():
         categorized_users[user.role].append(user.username)
 
     user_data = defaultdict(
-        lambda: {'total_labels': 0, 'total_consensus': 0, 'collections_count': 0, 'collection_names': []})  # To store data for each user
+        lambda: {'total_labels': 0, 'total_consensus': 0, 'collections_count': 0,
+                 'collection_names': []})  # To store data for each user
 
     if categorized_users['user']:
         for collection in collections:
@@ -476,6 +478,7 @@ def get_top_users():
     ranked_users = sorted(ranked_users, key=lambda x: x['score'], reverse=True)
     return ranked_users
 
+
 def insert_data_into_collection(collection_name, data):
     try:
         # Process the data to wrap each row in a "data" key
@@ -516,4 +519,30 @@ def remove_data_collection(collection_name):
         return True
     except Exception:
         return False
+
+
+def get_assigned_label_db_collection_names(username):
+    if username == 'admin':
+        collections = db.list_collection_names()
+        items_to_remove = {'users', 'config'}
+        collections = list(set(collections) - items_to_remove)
+        filtered_list = []
+        for collection in collections:
+            config = db.config.find_one({'collection': collection})
+            # print(config)
+            if not config['labels']:
+                continue
+            filtered_list.append(collection)
+        return filtered_list
+    else:
+        user = users_collection.find_one({"username": username})
+        collections = user.get("collections")
+        user_filtered_list = []
+        for collection in collections:
+            config = db.config.find_one({'collection': collection})
+            # print(config)
+            if not config['labels']:
+                continue
+            user_filtered_list.append(collection)
+        return user_filtered_list
 

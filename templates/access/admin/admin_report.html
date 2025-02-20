@@ -1,5 +1,20 @@
 {% extends 'access/admin/admin_base.html' %}
 
+{% block navitem_left %}
+    <div class="container-fluid">
+        <ul class="navbar-nav">
+                        <li class="nav-item">
+                <div style="padding-top: 10px; padding-left: 30px"> کاربر: {{logged_in_user.username}}</div>
+            </li>
+            <li class="nav-item">
+                <div style="padding-top: 10px; padding-left: 30px">دسترسی: {{logged_in_user.role}}</div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('logout') }}">خروج</a>
+            </li>
+        </ul>
+    </div>
+{% endblock %}
 
 {% block sidebar %}
     <div style="flex: 0 0 20%; background-color:var(--sidebar-color)">

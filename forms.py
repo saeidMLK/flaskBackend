@@ -31,6 +31,13 @@ class SignUpForm(FlaskForm):
         choices = models.get_db_collection_names()
         return choices
 
+    def set_role_choices(self, role):
+        if role == 'admin':
+            choices = [('user', 'User'), ('supervisor', 'Supervisor'), ('admin', 'Admin')]
+            self.role.choices = choices
+        else:
+            choices = [('user', 'User')]
+            self.role.choices = choices
 
 class RemoveUserForm(FlaskForm):
     username = SelectField('نام کاربری', validators=[DataRequired()], coerce=str)
@@ -122,6 +129,10 @@ class AssignCollectionToUserForm(FlaskForm):
     data_collection = SelectField('مجموعه داده:', choices=get_db_collection_names(), validators=[DataRequired()])
     username = SelectField('کاربر', validators=[DataRequired()], coerce=str)
     submit = SubmitField('اختصاص')
+
+    def set_data_collection_choices(self, user):
+        choices = models.get_assigned_label_db_collection_names(user)
+        self.data_collection.choices = choices
 
 
 class RemoveDataCollectionForm(FlaskForm):

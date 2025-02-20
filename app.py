@@ -118,29 +118,6 @@ def login():
     return render_template('registration/login.html', form=form, captcha_text=captcha_text, captcha_image_url=captcha_path)
 
 
-@app.route('/sign-up', methods=['GET', 'POST'])
-# @limiter.limit("1 per minute")
-def sign_up():
-    form = SignUpForm()  # Create an instance of the sign-up form
-    collections_choices = form.set_collections_choices()  # Ensure collections choices are set before form validation
-    if form.validate_on_submit():
-        # Process the form data (e.g., save user to database)
-        sanitized_username = sanitize_input(form.username.data)
-        # Get the selected collections from the hidden input
-        selected_collections = request.form.get('collections', '')  # Comma-separated string
-        collections_list = selected_collections.split(',') if selected_collections else []
-        # print(collections_list)
-        if add_user(sanitized_username, form.password.data, collections_list, form.role.data, current_user.username):
-            flash('ایجاد کاربر جدید با موفقیت انجام شد.', 'success')
-            return redirect(url_for('admin_user_management'))
-        else:
-            flash('ناموفق', 'danger')
-        return redirect(url_for('sign_up'))
-    # else:
-    # flash('Form validation failed. Please try again.', 'danger')
-    return render_template('registration/sign_up.html', form=form, collections_choices=collections_choices)
-
-
 @app.route('/logout')
 @login_required
 def logout():
@@ -164,6 +141,31 @@ def role_required(*roles):
     return wrapper
 
 
+@app.route('/sign-up', methods=['GET', 'POST'])
+@role_required('admin', 'supervisor')
+# @limiter.limit("1 per minute")
+def sign_up():
+    form = SignUpForm()  # Create an instance of the sign-up form
+    collections_choices = form.set_collections_choices()  # Ensure collections choices are set before form validation
+    form.set_role_choices(current_user.role)
+    if form.validate_on_submit():
+        # Process the form data (e.g., save user to database)
+        sanitized_username = sanitize_input(form.username.data)
+        # Get the selected collections from the hidden input
+        selected_collections = request.form.get('collections', '')  # Comma-separated string
+        collections_list = selected_collections.split(',') if selected_collections else []
+        # print(collections_list)
+        if add_user(sanitized_username, form.password.data, collections_list, form.role.data, current_user.username):
+            flash('ایجاد کاربر جدید با موفقیت انجام شد.', 'success')
+            return redirect(url_for('admin_user_management'))
+        else:
+            flash('ناموفق', 'danger')
+        return redirect(url_for('sign_up'))
+    # else:
+    # flash('Form validation failed. Please try again.', 'danger')
+    return render_template('registration/sign_up.html', form=form, collections_choices=collections_choices)
+
+
 @app.route('/admin', methods=['GET', 'POST'])
 @role_required('admin')
 def admin():
@@ -183,12 +185,14 @@ def admin_user_management():
         collections = get_user_collection(current_user.username)
         assign_collection_to_user_form.data_collection.choices = [(name, name) for name in collections]
         users = get_supervisor_s_users(current_user.username)
+        assign_collection_to_user_form.set_data_collection_choices(current_user.username)
     else:
         collections = get_db_collection_names(sys_collections_included=0)
         assign_collection_to_user_form.data_collection.choices = [(name, name) for name in collections]
         users = get_all_users()
+        assign_collection_to_user_form.set_data_collection_choices('admin')
 
-    assign_collection_to_user_form.data_collection.choices = [(name, name) for name in collections]
+    # assign_collection_to_user_form.data_collection.choices = [(name, name) for name in collections]
     if users:
         remove_user_form.username.choices = [(user.username, f"{user.username} -- {user.role}") for user in users]
         assign_collection_to_user_form.username.choices = [(user.username, user.username) for user in users if user.role == 'user']
@@ -213,7 +217,8 @@ def admin_user_management():
                            assign_collection_to_user_form=assign_collection_to_user_form,
                            admin_users=categorized_users.get('admin', []),
                            supervisor_users=categorized_users.get('supervisor', []),
-                           user_users=categorized_users.get('user', []))
+                           user_users=categorized_users.get('user', []),
+                           logged_in_user=current_user)
 
 
 @app.route('/remove_user', methods=['POST'])
@@ -246,14 +251,17 @@ def admin_report():
         if collections:
             collection_0 = collections[0]
         else:
-            return jsonify({"error": "No collections available"}), 400
+            # return jsonify({"error": "No collections available"}), 400
+            return render_template('main/error.html', error_message="No collections available"), 400
+
     else:
         collection_names_0 = get_db_collection_names(sys_collections_included=0)
         report_task_form.collection.choices = [(name, name) for name in collection_names_0]
         if collection_names_0:
             collection_0 = collection_names_0[0]
         else:
-            return jsonify({"error": "No collections available"}), 400
+            # return jsonify({"error": "No collections available"}), 400
+            return render_template('main/error.html', error_message="No collections available"), 400
 
     collection = report_task_form.collection.data or collection_0
 
@@ -318,7 +326,7 @@ def admin_report():
             }
     top_users = get_top_users()
     return render_template('access/admin/admin_report.html', users=users, report_task_form=report_task_form,
-                           report_data=report_data, collection=collection, top_users=top_users)
+                           report_data=report_data, collection=collection, top_users=top_users, logged_in_user=current_user)
 
 
 @app.route('/get_users_by_collection', methods=['POST'])
@@ -476,7 +484,8 @@ def admin_db_management():
                            conflict_row=conflict_row,
                            # users=users,
                            threshold=threshold,  # Pass the threshold to the template
-                           data_states=data_states)
+                           data_states=data_states,
+                           logged_in_user=current_user)
 
 
 @app.route('/add_average_label', methods=['POST'])
