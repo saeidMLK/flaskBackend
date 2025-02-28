@@ -455,8 +455,7 @@ def admin_db_management():
                         flash('Invalid row ID.', 'danger')
                 else:
                     flash('No row ID provided.', 'danger')
-                conflict_row = get_first_conflict_row(collection,
-                                                      threshold)  # Retrieve the next conflict row with the threshold
+                conflict_row = get_first_conflict_row(collection, threshold)  # Retrieve the next conflict row with the threshold
             else:
                 flash('Form validation failed.', 'danger')
 
@@ -649,7 +648,8 @@ def user():
                            label_options=label_options,
                            form=add_label_form,
                            user_collections=collections,
-                           selected_collection=selected_collection)
+                           selected_collection=selected_collection,
+                           logged_in_user=current_user)
 
 
 @app.route('/edit_label', methods=['POST'])

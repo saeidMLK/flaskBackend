@@ -4,3 +4,4 @@ localhost.crt
 localhost.key
 static/db
 
+/data-labeling.tar

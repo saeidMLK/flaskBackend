@@ -2,11 +2,11 @@
 {% block navitem_left %}
     <div class="container-fluid">
         <ul class="navbar-nav">
-                        <li class="nav-item">
-                <div style="padding-top: 10px; padding-left: 30px"> کاربر: {{logged_in_user.username}}</div>
+            <li class="nav-item">
+                <div style="padding-top: 10px; padding-left: 30px"> کاربر: {{ logged_in_user.username }}</div>
             </li>
             <li class="nav-item">
-                <div style="padding-top: 10px; padding-left: 30px">دسترسی: {{logged_in_user.role}}</div>
+                <div style="padding-top: 10px; padding-left: 30px">دسترسی: {{ logged_in_user.role }}</div>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('logout') }}">خروج</a>
@@ -88,8 +88,10 @@
     <div class="halves" style="max-width: 100%">
         <div class="half_right input-box" style="max-width: 75%">
             <h2 class="title" style="margin-bottom: 40px">مدیریت پایگاه داده</h2>
+
             <div id="conflict_search"
                  style="margin: -10px -12px -15px -20px; padding: 20px; border-radius: 0 10px 10px 0">
+
                 <form action="{{ url_for('admin_db_management') }}" method="post"
                       onsubmit="updateThresholdHiddenField()" class="input-box">
                     <h5>رفع تناقض در برچسب ها</h5>
@@ -102,11 +104,12 @@
                                style="width: 38%;">
                         <output>{{ threshold }}</output>
                         <label for="threshold">حد آستانه تناقض برای برچسب‌ها:</label>
-
                     </div>
+
                     <div class="form-group" style="margin-right: 20px; margin-top: 20px">
                         <label for="collection_name">مجموعه داده مورد نظر را انتخاب کنید:</label>
                     </div>
+
                     <div style="display: flex; align-items: center; width: 100%; padding-right: 20px;">
                         {{ conflict_search_form.data_collection(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
                         <input type="hidden" id="hiddenThreshold" name="hidden_threshold" value="{{ threshold }}">
@@ -116,39 +119,87 @@
                         </button>
                     </div>
                 </form>
+
                 <div style="margin-right: 20px">
+
                     {% if conflict_row %}
                         <p style="padding-top: 30px; margin-bottom: 5px">اولین داده متناقض:</p>
                         <table class="table table-striped">
-                            <thead>
-                            <tr>
-                                <th>داده</th>
-                                <th>برچسب‌ها</th>
-                            </tr>
-                            </thead>
+{#                            <thead>#}
+{#                            <tr>#}
+{#                                <th>داده</th>#}
+{#                                <th>برچسب‌ها</th>#}
+{#                            </tr>#}
+{#                            </thead>#}
                             <tbody>
                             <tr>
-                                <td>
-                                    {% if conflict_row['data'].items %}
-                                        <!-- Handle the case where 'data' is a dictionary -->
-                                        <ul>
-                                            {% for key, value in conflict_row['data'].items() %}
-                                                <li><strong>{{ key }}:</strong> {{ value }}</li>
-                                            {% endfor %}
-                                        </ul>
-                                    {% else %}
-                                        <!-- Handle the case where 'data' is a string -->
-                                        <strong>{{ conflict_row['data'] }}</strong>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% for key, value in conflict_row['label'].items() %}
-                                        <strong>{{ key }}:</strong> {{ value }}{% if not loop.last %}<br>{% endif %}
-                                    {% endfor %}
-                                </td>
+                            {% if conflict_row['data'].items %}
+                            <!-- Handle the case where 'data' is a dictionary -->
+                                {% if 'image_data' in conflict_row.data %}
+                                    <img src="data:image/jpeg;base64,{{ conflict_row.data['image_data'] }}" alt="Image"
+                                         class="img-fluid" style="max-width: 100%; border: 2px solid #ced4da;">
+                                    <p>توضیحات تصویر:</p>
+                                    {{ conflict_row.data['description'] }}
+
+                                {% elif 'audio_data' in conflict_row.data %}
+                                    <audio controls style="width: 100%; border: 2px solid #ced4da;">
+                                        <source src="data:audio/wav;base64,{{ conflict_row.data['audio_data'] }}"
+                                                type="audio/wav">
+                                        Your browser does not support the audio element.
+                                    </audio>
+                                    <p>توضیحات صدا:</p>
+                                    {{ conflict_row.data['description'] }}
+
+                                {% elif conflict_row.data is mapping %}
+                                    <table class="table table-bordered">
+                                        <thead>
+                                        <tr>
+                                            <th>کلید</th>
+                                            <th>مقدار</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for key, value in conflict_row.data.items() %}
+                                            <tr>
+                                                <td>{{ key }}</td>
+                                                <td>{{ value }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endif %}
+
+                            {% elif conflict_row.data is string %}
+                                {{ conflict_row.data(class="form-control bg-transparent", style="border: 2px solid #ced4da;", readonly=True) }}
+
+                            {% else %}
+                                -
+                            {% endif %}
+
+
+
+{#                                <td>#}
+{#                                    {% if conflict_row['data'].items %}#}
+{#                                        <!-- Handle the case where 'data' is a dictionary -->#}
+{#                                        <ul>#}
+{#                                            {% for key, value in conflict_row['data'].items() %}#}
+{#                                                <li><strong>{{ key }}:</strong> {{ value }}</li>#}
+{#                                            {% endfor %}#}
+{#                                        </ul>#}
+{#                                    {% else %}#}
+{#                                        <!-- Handle the case where 'data' is a string -->#}
+{#                                        <strong>{{ conflict_row['data'] }}</strong>#}
+{#                                    {% endif %}#}
+{#                                </td>#}
+{#                                <td>#}
+{#                                    {% for key, value in conflict_row['label'].items() %}#}
+{#                                        <strong>{{ key }}:</strong> {{ value }}{% if not loop.last %}<br>{% endif %}#}
+{#                                    {% endfor %}#}
+{#                                </td>#}
                             </tr>
                             </tbody>
                         </table>
+
                         <form action="{{ url_for('admin_db_management') }}" method="post">
                             {{ conflict_search_form.hidden_tag() }}
                             <p>برچسب مناسب را انتخاب کنید: </p>
@@ -169,6 +220,7 @@
                                 </button>
                             </div>
                         </form>
+
                     {% else %}
                         {% if request.method == 'POST' %}
                             <p style="margin-top: 15px">هیچ داده متناقضی یافت نشد!</p>
@@ -333,7 +385,7 @@
                 </form>
             </div>
 
-            <script type="text/javascript"> </script>
+            <script type="text/javascript"></script>
             <script src="{{ url_for('static', filename='js/admin_db.js') }}"></script>
             <script src="{{ url_for('static', filename='js/content_sub_part_background_color.js') }}"></script>
 
