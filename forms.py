@@ -111,6 +111,11 @@ class SetDataConfigForm(FlaskForm):
     add_button = SubmitField('افزودن')
     remove_button = SubmitField('حذف')
 
+    def get_unassinged_db_collection_names_for_user(self, user):
+        choices = models.get_unassigned_label_db_collection_names(user)
+        self.data_collection.choices = choices
+
+
 
 class AddAverageLabelForm(FlaskForm):
     data_collection = SelectField('مجموعه داده مورد نظر را انتخاب کنید:', choices=get_db_collection_names(), validators=[DataRequired()])

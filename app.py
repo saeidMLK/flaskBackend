@@ -369,6 +369,8 @@ def admin_db_management():
         for collection in collections:
             set_data_state(collection)
         data_states = get_data_states(current_user.username)
+        set_data_config_form.get_unassinged_db_collection_names_for_user(current_user.username)
+
     else:
         collections = get_db_collection_names(sys_collections_included=0)
         collection_names_1 = get_db_collection_names(sys_collections_included=1)
@@ -376,10 +378,11 @@ def admin_db_management():
         for collection in collections:
             set_data_state(collection)
         data_states = get_data_states('admin')
+        set_data_config_form.get_unassinged_db_collection_names_for_user('admin')
 
     add_average_label_form.data_collection.choices = [(name, name) for name in collections]
     conflict_search_form.data_collection.choices = [(name, name) for name in collections]
-    set_data_config_form.data_collection.choices = [(name, name) for name in collections]
+    # set_data_config_form.data_collection.choices = [(name, name) for name in collections]
     add_data_to_collection_form.data_collection.choices = [(name, name) for name in collections]
     remove_data_collection_form.data_collection.choices = [(name, name) for name in collections]
     # users = get_all_users()

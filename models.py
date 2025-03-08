@@ -546,3 +546,27 @@ def get_assigned_label_db_collection_names(username):
             user_filtered_list.append(collection)
         return user_filtered_list
 
+def get_unassigned_label_db_collection_names(username):
+    if username == 'admin':
+        collections = db.list_collection_names()
+        items_to_remove = {'users', 'config'}
+        collections = list(set(collections) - items_to_remove)
+        filtered_list = []
+        for collection in collections:
+            config = db.config.find_one({'collection': collection})
+            # print(config)
+            if config['labels']:
+                continue
+            filtered_list.append(collection)
+        return filtered_list
+    else:
+        user = users_collection.find_one({"username": username})
+        collections = user.get("collections")
+        user_filtered_list = []
+        for collection in collections:
+            config = db.config.find_one({'collection': collection})
+            # print(config)
+            if config['labels']:
+                continue
+            user_filtered_list.append(collection)
+        return user_filtered_list
