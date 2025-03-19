@@ -1,0 +1,10 @@
+{% extends 'main/base.html' %}
+{% block content %}
+    <div class="container">
+        <h2>مجموعه داده ای وجود ندارد!</h2>
+        <p>{{ error_message }}</p>
+        <a href="{{ url_for('admin_db_management') }}" class="back-btn">بازگشت</a>
+    </div>
+{% endblock %}
+
+

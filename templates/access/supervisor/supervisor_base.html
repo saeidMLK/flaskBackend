@@ -1,0 +1,42 @@
+{% extends 'main/base.html' %}
+{% block title %}  صفحه سوپروایزر {% endblock %}
+{% block navitem_right %}{% endblock %}
+{% block navitem_left %}
+    <div class="container-fluid">
+        <ul class="navbar-nav">
+                        <li class="nav-item">
+                <div style="padding-top: 10px; padding-left: 30px"> کاربر: {{logged_in_user.username}}</div>
+            </li>
+            <li class="nav-item">
+                <div style="padding-top: 10px; padding-left: 30px">دسترسی: {{logged_in_user.role}}</div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('logout') }}">خروج</a>
+            </li>
+        </ul>
+    </div>
+{% endblock %}
+
+{% block navbar_sub %}
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: var(--secondary-header-color); position: sticky; top: -35px; z-index: 1000;">
+        <div class="container-fluid">
+            <div>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_user_management') }}">مدیریت کاربران</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_report') }}">گزارشات</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('supervisor_db_management') }}">مدیریت پایگاه داده</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <h4  style="text-align: center">به صفحه سوپروایزر خوش آمدید.</h4>
+{% endblock %}
