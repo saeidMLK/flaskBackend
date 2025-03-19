@@ -267,6 +267,8 @@ def admin_report():
 
     users = get_collection_users(collection)
     if users:
+        users.remove(current_user)
+        print(users)
         report_task_form.username.choices = [user.username for user in users]
     else:
         report_task_form.username.choices = ['--کاربری یافت نشد--']
