@@ -43,6 +43,13 @@
                             اختصاص داده
                         </a>
                     </li>
+                    <li class="nav-item w-100">
+                        <a class="nav-link nav-link2 w-100 text-center"
+                           href="{{ url_for('admin_user_management') }}#revoke_data"
+                           style="padding: 10px; margin-bottom: 5px;" data-target="revoke_data">
+                            لغو اختصاص داده
+                        </a>
+                    </li>
                 </ul>
             </div>
         </nav>
@@ -101,6 +108,24 @@
                     </div>
                 </form>
             </div>
+
+
+        <div id="revoke_data"
+                 style="padding: 20px; border-radius: 10px; margin: 80px -15px 20px -15px">
+                <h5>لغو تخصیص داده به کاربران</h5>
+                <form action="{{ url_for('admin_user_management') }}" method="post" style="margin-right: 20px">
+                    {{ revoke_collection_from_user_form.hidden_tag() }}
+                    <div style="display: flex; align-items: center; width: 100%;">
+                        <p style="margin: 2px 0 0 8px">عدم اختصاص</p>
+                        {{ revoke_collection_from_user_form.data_collection(class="form-control", style="width:52%; flex-grow: 1; margin-left: 10px;") }}
+                        <p style="margin: 2px 0 0 8px">به</p>
+                        {{ revoke_collection_from_user_form.username(class="form-control", style="width:52%; flex-grow: 1; margin-left: 10px;") }}
+                        {{ revoke_collection_from_user_form.submit(class="btn btn-danger btn-success", style="width:38%;") }}
+                    </div>
+                </form>
+            </div>
+
+
         </div>
         <div class="half_left" style="max-width: 0%">
             <img src="/static/images/login.png" alt="Your Image">

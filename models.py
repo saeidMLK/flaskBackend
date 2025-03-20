@@ -546,6 +546,13 @@ def get_assigned_label_db_collection_names(username):
             user_filtered_list.append(collection)
         return user_filtered_list
 
+
+def revoke_collection_from_user(username, collection):
+    users_collection.update_one(
+        {"username": username},
+        {'$pull': {"collections": collection}} )
+
+
 def get_unassigned_label_db_collection_names(username):
     if username == 'admin':
         collections = db.list_collection_names()

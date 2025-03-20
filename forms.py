@@ -133,7 +133,17 @@ class AddDataToCollectionForm(FlaskForm):
 class AssignCollectionToUserForm(FlaskForm):
     data_collection = SelectField('مجموعه داده:', choices=get_db_collection_names(), validators=[DataRequired()])
     username = SelectField('کاربر', validators=[DataRequired()], coerce=str)
-    submit = SubmitField('اختصاص')
+    submit = SubmitField('اختصاص', name='assign')
+
+    def set_data_collection_choices(self, user):
+        choices = models.get_assigned_label_db_collection_names(user)
+        self.data_collection.choices = choices
+
+
+class RevokeCollectionFromUserForm(FlaskForm):
+    data_collection = SelectField('مجموعه داده:', choices=get_db_collection_names(), validators=[DataRequired()])
+    username = SelectField('کاربر', validators=[DataRequired()], coerce=str)
+    submit = SubmitField('لغو تخصیص', name='revoke')
 
     def set_data_collection_choices(self, user):
         choices = models.get_assigned_label_db_collection_names(user)

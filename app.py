@@ -14,14 +14,15 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask import Flask, render_template, redirect, url_for, flash, request, send_file, jsonify, session
 from forms import LoginForm, SignUpForm, RemoveUserForm, ExtractDBForm, AddLabelForm, ReadOneRowDataForm, \
     ReportTaskForm, ConflictSearchForm, SetDataConfigForm, ImportDBForm, AddAverageLabelForm, AddDataToCollectionForm, \
-    AssignCollectionToUserForm, RemoveDataCollectionForm
+    AssignCollectionToUserForm, RemoveDataCollectionForm, RevokeCollectionFromUserForm
 from models import find_user, add_user, check_password, find_user_by_id, remove_user_by_name, get_all_users, \
     extract_db_collection, read_one_row_of_data, add_label_to_data, get_user_performance, get_first_conflict_row, \
     set_admin_label_for_conflicts, set_data_configs, import_db_collection, convert_oid, \
     rename_collection_if_exist, get_user_labels, get_db_collection_names, get_user_collection, \
     calculate_and_set_average_label, get_recent_labels, update_label, get_label_options, get_collection_users, \
     get_user_role, get_top_users, get_data_states, set_data_state, insert_data_into_collection, \
-    assign_collection_to_user, get_supervisor_s_users, remove_data_collection, remove_conflicted_row
+    assign_collection_to_user, get_supervisor_s_users, remove_data_collection, remove_conflicted_row, \
+    revoke_collection_from_user
 from extensions import sanitize_input, generate_captcha, clear_old_captchas  # , limiter
 # Import the api.py to include API routes
 import api
@@ -178,6 +179,7 @@ def admin():
 @role_required('admin', 'supervisor')
 def admin_user_management():
     assign_collection_to_user_form = AssignCollectionToUserForm()
+    revoke_collection_from_user_form = RevokeCollectionFromUserForm()
     remove_user_form = RemoveUserForm()
     # loading users to user management form as an initialisation.
     role = current_user.role
@@ -196,15 +198,24 @@ def admin_user_management():
     if users:
         remove_user_form.username.choices = [(user.username, f"{user.username} -- {user.role}") for user in users]
         assign_collection_to_user_form.username.choices = [(user.username, user.username) for user in users if user.role == 'user']
+        revoke_collection_from_user_form.username.choices = [(user.username, user.username) for user in users if user.role == 'user']
+
     else:
         flash('کاربری یافت نشد.', 'warning')
         remove_user_form = None
 
-    if assign_collection_to_user_form.validate_on_submit():
+    if 'assign' in request.form and assign_collection_to_user_form.validate_on_submit():
         collection_name = assign_collection_to_user_form.data_collection.data
         username = assign_collection_to_user_form.username.data
         assign_collection_to_user(username, collection_name)
         flash('داده با موفقیت اختصاص یافت.', 'success')
+
+    if 'revoke' in request.form and revoke_collection_from_user_form.validate_on_submit():
+        username = revoke_collection_from_user_form.username.data
+        revoke_collection_from_user_form.set_data_collection_choices(username)
+        collection_name = revoke_collection_from_user_form.data_collection.data
+        revoke_collection_from_user(username, collection_name)
+        flash('داده با موفقیت لغو تخصبص شد.', 'success')
 
     # Categorize users by their roles
     categorized_users = defaultdict(list)
@@ -215,6 +226,7 @@ def admin_user_management():
                            users=users,
                            remove_user_form=remove_user_form,
                            assign_collection_to_user_form=assign_collection_to_user_form,
+                           revoke_collection_from_user_form=revoke_collection_from_user_form,
                            admin_users=categorized_users.get('admin', []),
                            supervisor_users=categorized_users.get('supervisor', []),
                            user_users=categorized_users.get('user', []),
