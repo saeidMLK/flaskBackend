@@ -215,7 +215,7 @@ def admin_user_management():
         revoke_collection_from_user_form.set_data_collection_choices(username)
         collection_name = revoke_collection_from_user_form.data_collection.data
         revoke_collection_from_user(username, collection_name)
-        flash('داده با موفقیت لغو تخصبص شد.', 'success')
+        flash('داده با موفقیت لغو تخصیص شد.', 'success')
 
     # Categorize users by their roles
     categorized_users = defaultdict(list)
@@ -634,10 +634,16 @@ def user():
 
     if request.method == 'POST':
         # This handles the form submission from the collection buttons
-        selected_collection = request.form.get('collection', collections[0])
+        if collections:
+            selected_collection = request.form.get('collection', collections[0])
+        else:
+            return render_template('main/error_user.html')
     else:
-        # This handles the redirect from the edit_label route or GET request
-        selected_collection = request.args.get('selected_collection', collections[0])
+        if collections:
+            # This handles the redirect from the edit_label route or GET request
+            selected_collection = request.args.get('selected_collection', collections[0])
+        else:
+            return render_template('main/error_user.html')
 
     # Set the selected collection in the form
     read_one_row_form.collection.data = selected_collection
