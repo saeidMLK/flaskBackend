@@ -146,8 +146,14 @@ def role_required(*roles):
 @role_required('admin', 'supervisor')
 # @limiter.limit("1 per minute")
 def sign_up():
+    role = current_user.role
+    if role == 'admin':
+        user = 'admin'
+    else:
+        user = current_user.username
+
     form = SignUpForm()  # Create an instance of the sign-up form
-    collections_choices = form.set_collections_choices()  # Ensure collections choices are set before form validation
+    collections_choices = form.set_collections_choices(user)  # Ensure collections choices are set before form validation
     form.set_role_choices(current_user.role)
     if form.validate_on_submit():
         # Process the form data (e.g., save user to database)
@@ -178,11 +184,12 @@ def admin():
 @app.route('/admin_user_management', methods=['GET', 'POST'])
 @role_required('admin', 'supervisor')
 def admin_user_management():
+    role = current_user.role
     assign_collection_to_user_form = AssignCollectionToUserForm()
     revoke_collection_from_user_form = RevokeCollectionFromUserForm()
     remove_user_form = RemoveUserForm()
+
     # loading users to user management form as an initialisation.
-    role = current_user.role
     if role == 'supervisor':
         collections = get_user_collection(current_user.username)
         assign_collection_to_user_form.data_collection.choices = [(name, name) for name in collections]
@@ -194,27 +201,29 @@ def admin_user_management():
         users = get_all_users()
         assign_collection_to_user_form.set_data_collection_choices('admin')
 
+
     # assign_collection_to_user_form.data_collection.choices = [(name, name) for name in collections]
     if users:
         remove_user_form.username.choices = [(user.username, f"{user.username} -- {user.role}") for user in users]
         assign_collection_to_user_form.username.choices = [(user.username, user.username) for user in users if user.role == 'user']
         revoke_collection_from_user_form.username.choices = [(user.username, user.username) for user in users if user.role == 'user']
+        user = revoke_collection_from_user_form.username.data
+        revoke_collection_from_user_form.set_data_collection_choices(user)
 
     else:
         flash('کاربری یافت نشد.', 'warning')
         remove_user_form = None
 
     if 'assign' in request.form and assign_collection_to_user_form.validate_on_submit():
+        assign_username = assign_collection_to_user_form.username.data
         collection_name = assign_collection_to_user_form.data_collection.data
-        username = assign_collection_to_user_form.username.data
-        assign_collection_to_user(username, collection_name)
+        assign_collection_to_user(assign_username, collection_name)
         flash('داده با موفقیت اختصاص یافت.', 'success')
 
     if 'revoke' in request.form and revoke_collection_from_user_form.validate_on_submit():
-        username = revoke_collection_from_user_form.username.data
-        revoke_collection_from_user_form.set_data_collection_choices(username)
+        revoke_username = revoke_collection_from_user_form.username.data
         collection_name = revoke_collection_from_user_form.data_collection.data
-        revoke_collection_from_user(username, collection_name)
+        revoke_collection_from_user(revoke_username, collection_name)
         flash('داده با موفقیت لغو تخصیص شد.', 'success')
 
     # Categorize users by their roles
@@ -231,6 +240,14 @@ def admin_user_management():
                            supervisor_users=categorized_users.get('supervisor', []),
                            user_users=categorized_users.get('user', []),
                            logged_in_user=current_user)
+
+
+@app.route('/get_choices')
+def get_choices():
+    username = request.args.get('username')
+    collections = get_user_collection(username)
+    choices = collections if username else []
+    return jsonify(choices)
 
 
 @app.route('/remove_user', methods=['POST'])
@@ -279,7 +296,8 @@ def admin_report():
 
     users = get_collection_users(collection)
     if users:
-        users.remove(current_user)
+        if current_user in users:
+            users.remove(current_user)
         print(users)
         report_task_form.username.choices = [user.username for user in users]
     else:

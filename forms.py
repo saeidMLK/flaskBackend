@@ -27,8 +27,8 @@ class SignUpForm(FlaskForm):
     role = SelectField('نقش', choices=[('user', 'User'), ('supervisor', 'Supervisor'), ('admin', 'Admin')], validators=[DataRequired()])
     submit = SubmitField('ایجاد کاربر')
 
-    def set_collections_choices(self):
-        choices = models.get_db_collection_names()
+    def set_collections_choices(self, user):
+        choices = models.get_assigned_label_db_collection_names(user)
         return choices
 
     def set_role_choices(self, role):
@@ -124,6 +124,7 @@ class AddAverageLabelForm(FlaskForm):
         choices = get_db_collection_names()
         self.data_collection.choices = choices
 
+
 class AddDataToCollectionForm(FlaskForm):
     data_collection = SelectField('مجموعه داده مورد نظر را انتخاب کنید:', choices=get_db_collection_names(), validators=[DataRequired()])
     file = FileField('فایل CSV/JSON:', validators=[DataRequired()])
@@ -142,13 +143,19 @@ class AssignCollectionToUserForm(FlaskForm):
 
 class RevokeCollectionFromUserForm(FlaskForm):
     data_collection = SelectField('مجموعه داده:', choices=get_db_collection_names(), validators=[DataRequired()])
-    username = SelectField('کاربر', validators=[DataRequired()], coerce=str)
+    username = SelectField('کاربر', choices=['--کاربری یافت نشد.--'], validators=[DataRequired()], coerce=str)
     submit = SubmitField('لغو تخصیص', name='revoke')
 
-    def set_data_collection_choices(self, user):
-        choices = models.get_assigned_label_db_collection_names(user)
+    def set_data_collection_choices(self, selected_user):
+        choices = models.get_user_collection(selected_user)
+        print(choices)
         self.data_collection.choices = choices
 
+    # def set_username_choices(self, collection):
+    #     users = models.get_collection_users(collection)
+    #     choices = [user.username for user in users] if users else ['--کاربری یافت نشد.--']
+    #     print(22222,choices)
+    #     self.username.choices = choices
 
 class RemoveDataCollectionForm(FlaskForm):
     data_collection = SelectField('مجموعه داده مورد نظر را انتخاب کنید:', choices=get_db_collection_names(), validators=[DataRequired()])
