@@ -50,6 +50,13 @@
                             لغو اختصاص داده
                         </a>
                     </li>
+                    <li class="nav-item w-100">
+                        <a class="nav-link nav-link2 w-100 text-center"
+                           href="{{ url_for('admin_user_management') }}#change_password"
+                           style="padding: 10px; margin-bottom: 5px;" data-target="change_password">
+                           تغییر رمز عبور
+                        </a>
+                    </li>
                 </ul>
             </div>
         </nav>
@@ -67,6 +74,7 @@
     <div class="halves" style="max-width: 80%">
         <div class="half_right input-box" style="max-width: 100%; border-radius: 10px;">
             <h2 class="title" style="margin-bottom: 70px">مدیریت کاربران</h2>
+
             <div id="new_user" style="margin: -15px; padding: 20px; border-radius: 10px">
                 <h5>ساخت کاربر جدید</h5>
                 <div style="display: flex; align-items: center; width: 100%;">
@@ -109,7 +117,6 @@
                 </form>
             </div>
 
-
             <div id="revoke_data"
                  style="padding: 20px; border-radius: 10px; margin: 80px -15px 20px -15px">
                 <h5>لغو تخصیص داده به کاربران</h5>
@@ -123,6 +130,28 @@
                         {{ revoke_collection_from_user_form.submit(class="btn btn-danger btn-success", style="width:38%;") }}
                     </div>
                 </form>
+            </div>
+
+            <div id="change_password"
+                 style="padding: 20px; border-radius: 10px; margin: 30px -15px 20px -15px">
+                <h5>تغییر رمز عبور</h5>
+                <form action="{{ url_for('admin_user_management') }}" method="post" style="margin-right: 20px">
+                    {{ change_password_form.hidden_tag() }}
+                    <div style="display: flex; flex-direction: column; gap: 10px; align-items: start; width: 100%;">
+                        <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
+                        <p style="margin: 2px 0 0 8px">کاربر</p>
+                        {{ change_password_form.username(class="form-control", style="width:52%; margin-left: 10px;") }}
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
+                            <p style="margin: 2px 0 0 8px">رمز جدید</p>
+                            {{ change_password_form.new_password(class="form-control", style="width:52%; margin-left: 10px;") }}
+                            <p style="margin: 2px 0 0 8px">تکرار رمز جدید</p>
+                            {{ change_password_form.confirm_new_password(class="form-control", style="width:52%; margin-left: 10px;") }}
+                        </div>
+                        {{ change_password_form.submit(class="btn btn-danger btn-success", style="width:38%;") }}
+                    </div>
+                </form>
+
             </div>
 
 

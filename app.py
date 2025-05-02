@@ -14,7 +14,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask import Flask, render_template, redirect, url_for, flash, request, send_file, jsonify, session
 from forms import LoginForm, SignUpForm, RemoveUserForm, ExtractDBForm, AddLabelForm, ReadOneRowDataForm, \
     ReportTaskForm, ConflictSearchForm, SetDataConfigForm, ImportDBForm, AddAverageLabelForm, AddDataToCollectionForm, \
-    AssignCollectionToUserForm, RemoveDataCollectionForm, RevokeCollectionFromUserForm
+    AssignCollectionToUserForm, RemoveDataCollectionForm, RevokeCollectionFromUserForm, ChangePassword
 from models import find_user, add_user, check_password, find_user_by_id, remove_user_by_name, get_all_users, \
     extract_db_collection, read_one_row_of_data, add_label_to_data, get_user_performance, get_first_conflict_row, \
     set_admin_label_for_conflicts, set_data_configs, import_db_collection, convert_oid, \
@@ -22,7 +22,7 @@ from models import find_user, add_user, check_password, find_user_by_id, remove_
     calculate_and_set_average_label, get_recent_labels, update_label, get_label_options, get_collection_users, \
     get_user_role, get_top_users, get_data_states, set_data_state, insert_data_into_collection, \
     assign_collection_to_user, get_supervisor_s_users, remove_data_collection, remove_conflicted_row, \
-    revoke_collection_from_user
+    revoke_collection_from_user, change_password
 from extensions import sanitize_input, generate_captcha, clear_old_captchas  # , limiter
 # Import the api.py to include API routes
 import api
@@ -188,6 +188,7 @@ def admin_user_management():
     assign_collection_to_user_form = AssignCollectionToUserForm()
     revoke_collection_from_user_form = RevokeCollectionFromUserForm()
     remove_user_form = RemoveUserForm()
+    change_password_form = ChangePassword()
 
     # loading users to user management form as an initialisation.
     if role == 'supervisor':
@@ -206,6 +207,7 @@ def admin_user_management():
     if users:
         remove_user_form.username.choices = [(user.username, f"{user.username} -- {user.role}") for user in users]
         assign_collection_to_user_form.username.choices = [(user.username, user.username) for user in users if user.role == 'user']
+        change_password_form.username.choices = [(user.username, user.username) for user in users if user.role == 'user']
         revoke_collection_from_user_form.username.choices = [(user.username, user.username) for user in users if user.role == 'user']
         user = revoke_collection_from_user_form.username.data
         revoke_collection_from_user_form.set_data_collection_choices(user)
@@ -226,6 +228,17 @@ def admin_user_management():
         revoke_collection_from_user(revoke_username, collection_name)
         flash('داده با موفقیت لغو تخصیص شد.', 'success')
 
+    if 'changepassword' in request.form and change_password_form.validate_on_submit():
+        username = change_password_form.username.data
+        sanitized_username = sanitize_input(username)
+        new_password = change_password_form.new_password.data
+        changed = change_password(sanitized_username, new_password)
+        if changed:
+            flash('کلمه عبور با موفقیت تغییر کرد.', 'success')
+        else:
+            flash('کلمه عبور تغییر نکرد.', 'danger')
+
+
     # Categorize users by their roles
     categorized_users = defaultdict(list)
     for user in users:
@@ -236,6 +249,7 @@ def admin_user_management():
                            remove_user_form=remove_user_form,
                            assign_collection_to_user_form=assign_collection_to_user_form,
                            revoke_collection_from_user_form=revoke_collection_from_user_form,
+                           change_password_form=change_password_form,
                            admin_users=categorized_users.get('admin', []),
                            supervisor_users=categorized_users.get('supervisor', []),
                            user_users=categorized_users.get('user', []),
@@ -578,7 +592,7 @@ def import_db():
         file_name_with_extension = secure_filename(file.filename)
         file_name, file_extension = os.path.splitext(file_name_with_extension)
         collection_title = import_db_form.title.data
-        collection_title = secure_filename(collection_title)
+        # collection_title = secure_filename(collection_title)
         try:
             # Check if the collection already exists
             if collection_title in get_db_collection_names(sys_collections_included=1):

@@ -8,6 +8,13 @@
                 <ul class="navbar-nav flex-column w-100" style="padding-inline-start: 0;">
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
+                           href="{{ url_for('supervisor_db_management') }}#add_data"
+                           style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
+                            درج یک مجموعه داده
+                        </a>
+                    </li>
+                    <li class="nav-item w-100">
+                        <a class="nav-link nav-link2 w-100 text-center"
                            href="{{ url_for('supervisor_db_management') }}#conflict_search"
                            style="border: 1px solid #15482e; padding: 10px; margin-bottom: 5px;">
                             رفع تناقض در برچسب ها
@@ -27,13 +34,7 @@
                             استخراج پایگاه داده
                         </a>
                     </li>
-                    <li class="nav-item w-100">
-                        <a class="nav-link nav-link2 w-100 text-center"
-                           href="{{ url_for('supervisor_db_management') }}#add_data"
-                           style="border: 1px solid  #15482e; padding: 10px; margin-bottom: 5px;">
-                            درج یک مجموعه داده
-                        </a>
-                    </li>
+
                     <li class="nav-item w-100">
                         <a class="nav-link nav-link2 w-100 text-center"
                            href="{{ url_for('supervisor_db_management') }}#add_to_collection"
@@ -67,6 +68,20 @@
     <div class="halves" style="max-width: 100%">
         <div class="half_right input-box" style="max-width: 70%">
             <h2 class="title">مدیریت پایگاه داده</h2>
+
+            <h5 id="add_data" style="margin-top: 60px">درج مجموعه داده جدید</h5>
+            <form action="{{ url_for('import_db') }}" method="post" enctype="multipart/form-data"
+                  style="margin-right: 20px">
+                {{ import_db_form.hidden_tag() }}
+                <div class="form-group" style="padding-top:10px ">
+                    <label for="file"> فایل JSON:</label>
+                </div>
+                <div style="display: flex; align-items: center; width: 100%;">
+                    {{ import_db_form.file(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
+                    {{ import_db_form.submit(class="btn btn-success", style="width:38%;") }}
+                </div>
+            </form>
+
 
             <form action="{{ url_for('supervisor_db_management') }}" method="post" onsubmit="updateThresholdHiddenField()"
                   class="input-box">
@@ -179,20 +194,6 @@
                        style="background:#37c9da; width: 38%;">دانلود پایگاه داده استخراج شده.</a>
                 </div>
             {% endif %}
-
-
-            <h5 id="add_data" style="margin-top: 60px">درج مجموعه داده جدید</h5>
-            <form action="{{ url_for('import_db') }}" method="post" enctype="multipart/form-data"
-                  style="margin-right: 20px">
-                {{ import_db_form.hidden_tag() }}
-                <div class="form-group" style="padding-top:10px ">
-                    <label for="file"> فایل JSON:</label>
-                </div>
-                <div style="display: flex; align-items: center; width: 100%;">
-                    {{ import_db_form.file(class="form-control", style="width:62%; flex-grow: 1; margin-left: 10px;") }}
-                    {{ import_db_form.submit(class="btn btn-success", style="width:38%;") }}
-                </div>
-            </form>
 
             <h5 id="add_to_collection" style="margin-top: 80px">افزودن داده به یک مجموعه داده</h5>
             <form action="{{ url_for('add_data_to_collection') }}" method="post" enctype="multipart/form-data"

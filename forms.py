@@ -148,7 +148,7 @@ class RevokeCollectionFromUserForm(FlaskForm):
 
     def set_data_collection_choices(self, selected_user):
         choices = models.get_user_collection(selected_user)
-        print(choices)
+        # print(choices)
         self.data_collection.choices = choices
 
     # def set_username_choices(self, collection):
@@ -162,3 +162,9 @@ class RemoveDataCollectionForm(FlaskForm):
     # update_user_scores = BooleanField('بروزرسانی امتیازات کاربران')
     submit = SubmitField('حذف مجموعه داده')
 
+
+class ChangePassword(FlaskForm):
+    username = SelectField('نام کاربری', validators=[DataRequired()], coerce=str)
+    new_password = PasswordField('کلمه عبور', validators=[DataRequired()])
+    confirm_new_password = PasswordField('تکرار کلمه عبور', validators=[DataRequired(), EqualTo('new_password')])
+    submit = SubmitField('تغییر کلمه عبور', name='changepassword')

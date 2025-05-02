@@ -577,3 +577,16 @@ def get_unassigned_label_db_collection_names(username):
                 continue
             user_filtered_list.append(collection)
         return user_filtered_list
+
+
+def change_password(username, password):
+    new_password_hash = generate_password_hash(password)
+    result = users_collection.update_one(
+        {'username': username},
+        {'$set': {'password_hash': new_password_hash}}
+    )
+    # Check if the user was found and updated
+    if result.modified_count == 1:
+        return True
+    else:
+        return False
