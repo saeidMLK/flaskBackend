@@ -18,15 +18,18 @@ from forms import LoginForm, SignUpForm, RemoveUserForm, ExtractDBForm, AddLabel
 from models import find_user, add_user, check_password, find_user_by_id, remove_user_by_name, get_all_users, \
     extract_db_collection, read_one_row_of_data, add_label_to_data, get_user_performance, get_first_conflict_row, \
     set_admin_label_for_conflicts, set_data_configs, import_db_collection, convert_oid, \
-    rename_collection_if_exist, get_user_labels, get_db_collection_names, get_user_collection, \
+    get_user_labels, get_db_collection_names, get_user_collection, \
     calculate_and_set_average_label, get_recent_labels, update_label, get_label_options, get_collection_users, \
-    get_user_role, get_top_users, get_data_states, set_data_state, insert_data_into_collection, \
+    get_top_users, get_data_states, set_data_state, insert_data_into_collection, \
     assign_collection_to_user, get_supervisor_s_users, remove_data_collection, remove_conflicted_row, \
-    revoke_collection_from_user, change_password
+    revoke_collection_from_user, change_password #, rename_collection_if_exist, get_user_role
 from extensions import sanitize_input, generate_captcha, clear_old_captchas  # , limiter
 # Import the api.py to include API routes
-import api
+# import api
 from extensions import csrf, login_manager  # Import CSRF and login manager from extensions.py
+from urllib.parse import unquote
+from markupsafe import escape
+from werkzeug.exceptions import BadRequest
 
 
 app = Flask(__name__)
@@ -44,9 +47,9 @@ csrf.init_app(app)  # Initialize CSRF protection with the app
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# Import Blueprints and register them
-from api import api_bp  # Import the blueprint from api.py
-app.register_blueprint(api_bp)  # Register the blueprint
+# # Import Blueprints and register them
+# from api import api_bp  # Import the blueprint from api.py
+# app.register_blueprint(api_bp)  # Register the blueprint
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -312,12 +315,15 @@ def admin_report():
     if users:
         if current_user in users:
             users.remove(current_user)
-        print(users)
         report_task_form.username.choices = [user.username for user in users]
     else:
         report_task_form.username.choices = ['--کاربری یافت نشد--']
     report_data = {}
-    page = request.args.get('page', 1, type=int)
+    try:
+        page = max(1, int(request.args.get('page', 1)))  # Ensures page is at least 1
+    except (ValueError, TypeError):
+        page = 1  # Fallback to default if conversion fails
+    # page = request.args.get('page', 1, type=int)
     per_page = 10
     # username = None
     if report_task_form.validate_on_submit():
@@ -344,7 +350,6 @@ def admin_report():
             }
         if 'users_report' in request.form:
             users_report_data = {}
-            # print(users)
             for user in users:
                 # print(type(user.username))
                 number_of_labels, consensus_degree, label_percentage = get_user_performance(user.username, collection)
@@ -357,7 +362,11 @@ def admin_report():
             }
     else:
         # Handle the case when navigating through pages without form submission
-        username = request.args.get('username')
+        # Secure username
+        username = escape(request.args.get('username', '').strip())
+        if username and not username.isalnum():
+            raise BadRequest("Invalid username")
+        # username = request.args.get('username')
         report_task_form.username.data = username
         if username:
             rows, total_rows = get_user_labels(username, collection, page, per_page)
@@ -379,12 +388,12 @@ def admin_report():
 @role_required('admin')
 def get_users_by_collection():
     collection = request.form.get('collection')
-    print(f"Received Collection: {collection}")  # Debugging output
+    # print(f"Received Collection: {collection}")  # Debugging output
 
     users = get_collection_users(collection)
     user_list = [user.username for user in users] if users else ['--کاربری یافت نشد.--']
 
-    print(f"User List: {user_list}")  # Debugging output
+    # print(f"User List: {user_list}")  # Debugging output
 
     return jsonify(users=user_list)
 
@@ -413,6 +422,7 @@ def admin_db_management():
         collections = get_user_collection(current_user.username)
         extract_db_form.collection_name.choices = [(name, name) for name in collections]
         for collection in collections:
+            # print(collection)
             set_data_state(collection)
         data_states = get_data_states(current_user.username)
         set_data_config_form.get_unassinged_db_collection_names_for_user(current_user.username)
@@ -432,10 +442,13 @@ def admin_db_management():
     add_data_to_collection_form.data_collection.choices = [(name, name) for name in collections]
     remove_data_collection_form.data_collection.choices = [(name, name) for name in collections]
     # users = get_all_users()
-    extracted = request.args.get('extracted', False)
+    # extracted = request.args.get('extracted', False)
+    # Secured parameter handling:
+    extracted = request.args.get('extracted', 'false').lower() == 'true'
     # For downloading the collection.
     if collections:
-        selected_collection = request.args.get('collection_name', collections[0])
+        selected_collection = escape(secure_filename(request.args.get('collection_name', collections[0])))
+        # selected_collection = request.args.get('collection_name', collections[0])
     else:
         selected_collection = []
 
@@ -449,7 +462,12 @@ def admin_db_management():
             threshold = float(request.form.get('threshold', 0.5))
             conflict_row = get_first_conflict_row(collection, threshold)
         elif 'set_label' in request.form:
-            collection = request.form.get('hidden_collection')  # Retrieve collection from hidden field
+            # Secure in one line (no strip needed)
+            collection = escape(secure_filename(request.form.get('hidden_collection', '')))
+            # Validation
+            if not collection:
+                raise BadRequest("Collection name is required")
+            # collection = request.form.get('hidden_collection')  # Retrieve collection from hidden field
             conflict_search_form.data_collection.data = collection  # Repopulate form field
             conflict_search_form.set_label_choices(collection)  # Set label choices based on selected collection
             threshold = float(request.form.get('hidden_threshold', 0.5))  # Retrieve the threshold from the hidden field
@@ -487,7 +505,12 @@ def admin_db_management():
                 flash('Failed to update data config. Form is not validate_on_submit', 'danger')
 
         elif 'remove_row' in request.form:
-            collection = request.form.get('hidden_collection')  # Retrieve collection from hidden field
+            # Secure in one line (no strip needed)
+            collection = escape(secure_filename(request.form.get('hidden_collection', '')))
+            # Validation
+            if not collection:
+                raise BadRequest("Collection name is required")
+            # collection = request.form.get('hidden_collection')  # Retrieve collection from hidden field
             conflict_search_form.data_collection.data = collection  # Repopulate form field
             conflict_search_form.set_label_choices(collection)  # Set label choices based on selected collection
             threshold = float(request.form.get('hidden_threshold', 0.5))  # Retrieve the threshold from the hidden field
@@ -575,11 +598,33 @@ def extract_db():
 @app.route('/download_file/<collection_name>')
 @role_required('admin', 'supervisor')
 def download_file(collection_name):
-    path = f'static/db/db_{collection_name}.json'  # Path to the saved file
+    # 1. Sanitize the collection name to prevent path traversal
+    safe_collection = secure_filename(unquote(collection_name))
+
+    # 2. Validate the filename format (customize as needed)
+    if not safe_collection.isidentifier():  # Only allow alphanumeric + underscores
+        flash('Invalid collection name.', 'danger')
+        return redirect(url_for('admin_db_management'))
+
+    # 3. Construct a secure path
+    base_dir = os.path.abspath('static/db')  # Absolute path to prevent traversal
+    file_name = f'db_{safe_collection}.json'
+    file_path = os.path.join(base_dir, file_name)
+
+    # 4. Verify the file exists within the intended directory
+    if not os.path.realpath(file_path).startswith(base_dir):
+        flash('Invalid file path.', 'danger')
+        return redirect(url_for('admin_db_management'))
+
+    # 5. Serve the file (escaping is handled by Flask's send_file)
     try:
-        return send_file(path, as_attachment=True, download_name=f'extracted_{collection_name}.json')
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=f'extracted_{safe_collection}.json'  # Safe (escaped by Flask)
+        )
     except FileNotFoundError:
-        flash('The requested file was not found on the server.', 'danger')
+        flash('The requested file was not found on the server.', 'danger')  # Static message (no XSS)
         return redirect(url_for('admin_db_management'))
 
 
@@ -592,7 +637,7 @@ def import_db():
         file_name_with_extension = secure_filename(file.filename)
         file_name, file_extension = os.path.splitext(file_name_with_extension)
         collection_title = import_db_form.title.data
-        # collection_title = secure_filename(collection_title)
+        collection_title = secure_filename(collection_title)
         try:
             # Check if the collection already exists
             if collection_title in get_db_collection_names(sys_collections_included=1):
@@ -609,10 +654,8 @@ def import_db():
             # Handle CSV file
             elif file_extension.lower() == '.csv':
                 data = []
-                print(1)
                 df = pd.read_csv(file)
                 data = df.to_dict(orient='records')
-                print(2)
                 import_db_collection(current_user.username, collection_title, data)
                 flash(f'مجموعه داده {collection_title} با موفقیت به دیتابیس اضافه شد.', 'success')
 
@@ -711,18 +754,32 @@ def user():
 @role_required('user')
 @login_required
 def edit_label():
-    row_id = request.form['row_id']
-    new_label_value = request.form['label_value']
-    selected_collection = request.form.get('selected_collection')  # Retrieve the selected collection
-    username = current_user.username
+    try:
+        # Validate and sanitize inputs
+        row_id = ObjectId(request.form['row_id'])  # Validates ObjectId format
+        new_label_value = escape(request.form['label_value'].strip())  # XSS protection + trim
+        selected_collection = secure_filename(request.form.get('selected_collection', ''))  # Path traversal protection
 
-    if update_label(ObjectId(row_id), username, new_label_value, selected_collection):
-        flash('برچسب با موفقیت ویرایش شد.', 'success')
-    else:
-        flash('ویرایش برچسب ناموفق بود.', 'danger')
+        # Additional validation (optional)
+        if not selected_collection:
+            raise BadRequest("Collection name is required")
 
-    # Redirect with selected_collection as a URL parameter
-    return redirect(url_for('user', selected_collection=selected_collection))
+        username = current_user.username  # Trusted (from authenticated session)
+
+        if update_label(row_id, username, new_label_value, selected_collection):
+            flash('برچسب با موفقیت ویرایش شد.', 'success')
+        else:
+            flash('ویرایش برچسب ناموفق بود.', 'danger')
+
+        # SECURE REDIRECT: Escape the collection name for URL
+        return redirect(url_for('user', selected_collection=escape(selected_collection)))
+
+    except BadRequest as e:
+        flash(str(e), 'danger')
+        return redirect(url_for('user'))
+    except Exception as e:  # Catch ObjectId errors, etc.
+        flash('خطای سیستمی رخ داد.', 'danger')
+        return redirect(url_for('user'))
 
 
 @app.route('/read_one_row_data', methods=['POST'])
@@ -740,112 +797,45 @@ def read_one_row_data():
     return redirect(url_for('user'))
 
 
+from markupsafe import escape
+from werkzeug.utils import secure_filename
+from bson import ObjectId
+from werkzeug.exceptions import BadRequest
+
+
 @app.route('/add_label', methods=['POST'])
 @role_required('user')
 @login_required
 def add_label():
-    selected_collection = request.form.get('selected_collection')  # Retrieve the selected collection
-    add_label_form = AddLabelForm()
-    # print(selected_collection)
-    add_label_form.set_label_choices(selected_collection)
-    if add_label_form.validate_on_submit():
-        row_id = add_label_form.row_id.data
-        username = add_label_form.username.data
-        label = add_label_form.label.data
-        if add_label_to_data(ObjectId(row_id), label, username, selected_collection):
-            flash('برچسب با موفقیت اضافه شد.', 'success')
-        else:
-            flash('افزودن برچسب ناموفق بود.', 'danger')
-    return redirect(url_for('user', selected_collection=selected_collection))
+    try:
+        # Secure the selected_collection input
+        selected_collection = secure_filename(request.form.get('selected_collection', ''))
+        if not selected_collection:
+            raise BadRequest("Collection name is required")
 
+        add_label_form = AddLabelForm()
+        add_label_form.set_label_choices(selected_collection)  # Uses sanitized collection name
 
-# @app.route('/supervisor_db_management', methods=['GET', 'POST'])
-# @role_required('supervisor')
-# @login_required
-# def supervisor_db_management():
-#     import_db_form = ImportDBForm()
-#     extract_db_form = ExtractDBForm()
-#     # admin_label_config_form = SetDataConfigForm()
-#     add_average_label_form = AddAverageLabelForm()
-#     conflict_search_form = ConflictSearchForm()
-#     set_data_config_form = SetDataConfigForm()
-#     add_data_to_collection_form = AddDataToCollectionForm()
-#     # collection_names_0 = get_db_collection_names(sys_collections_included=0)
-#     collections = get_user_collection(current_user.username)
-#     extract_db_form.collection_name.choices = [(name, name) for name in collections]
-#     add_average_label_form.data_collection.choices = [(name, name) for name in collections]
-#     conflict_search_form.data_collection.choices = [(name, name) for name in collections]
-#     set_data_config_form.data_collection.choices = [(name, name) for name in collections]
-#     add_data_to_collection_form.data_collection.choices = [(name, name) for name in collections]
-#     # extract_db_form.collection_name = collections
-#     extracted = request.args.get('extracted', False)
-#     if collections:
-#         selected_collection = request.args.get('collection_name', collections[0])
-#     else:
-#         selected_collection = []
-#     conflict_row = None
-#     threshold = 0.7  # Default value
-#     if request.method == 'POST':
-#         if 'search' in request.form:
-#             collection = conflict_search_form.data_collection.data
-#             conflict_search_form.hidden_collection.data = collection  # Store collection in hidden field
-#             conflict_search_form.set_label_choices(collection)  # Set label choices based on selected collection
-#             threshold = float(request.form.get('threshold', 0.5))
-#             conflict_row = get_first_conflict_row(collection, threshold)
-#         elif 'set_label' in request.form:
-#             collection = request.form.get('hidden_collection')  # Retrieve collection from hidden field
-#             conflict_search_form.data_collection.data = collection  # Repopulate form field
-#             conflict_search_form.set_label_choices(collection)  # Set label choices based on selected collection
-#             threshold = float(request.form.get('hidden_threshold', 0.5))  # Retrieve the threshold from the hidden field
-#
-#             if conflict_search_form.validate_on_submit():
-#                 label = conflict_search_form.label.data
-#                 row_id = request.form.get('row_id')
-#                 if row_id:
-#                     try:
-#                         row_id = ObjectId(row_id)
-#                         if set_admin_label_for_conflicts(collection, row_id, label):
-#                             flash('برچسب با موفقیت افزوده شد.', 'success')
-#                         else:
-#                             flash('Failed to set label.', 'danger')
-#                     except bson.errors.InvalidId:
-#                         flash('Invalid row ID.', 'danger')
-#                 else:
-#                     flash('No row ID provided.', 'danger')
-#                 conflict_row = get_first_conflict_row(collection,
-#                                                       threshold)  # Retrieve the next conflict row with the threshold
-#             else:
-#                 flash('Form validation failed.', 'danger')
-#
-#         elif 'save_labels' in request.form:
-#             print(set_data_config_form.validate_on_submit())
-#             if set_data_config_form.validate_on_submit():
-#                 labels = set_data_config_form.labels.data
-#                 data_collection = set_data_config_form.data_collection.data
-#                 num_required_labels = set_data_config_form.num_required_labels.data
-#                 if set_data_configs(data_collection, labels, num_required_labels):
-#                     flash('تنظیمات داده با موفقیت بروزرسانی شدند.', 'success')
-#                 else:
-#                     flash('Failed to update data config.', 'danger')
-#             else:
-#                 flash('Failed to update data config. Form is not validate_on_submit', 'danger')
-#     data_states = get_data_states(current_user.username)
-#
-#
-#     return render_template('access/supervisor/supervisor_db_management.html',
-#                            supervisor_collections=collections,
-#                            selected_collection=selected_collection,
-#                            import_db_form=import_db_form,
-#                            extract_db_form=extract_db_form,
-#                            extracted=extracted,
-#                            add_data_to_collection_form=add_data_to_collection_form,
-#                            # admin_label_config_form=admin_label_config_form,
-#                            add_average_label_form=add_average_label_form,
-#                            conflict_search_form=conflict_search_form,
-#                            set_data_config_form=set_data_config_form,
-#                            threshold=threshold,
-#                            conflict_row=conflict_row,
-#                            data_states=data_states)
+        if add_label_form.validate_on_submit():
+            # Validate and sanitize form inputs
+            row_id = ObjectId(add_label_form.row_id.data)  # Validates MongoDB ID format
+            username = escape(add_label_form.username.data.strip())  # XSS protection
+            label = escape(add_label_form.label.data.strip())  # XSS protection
+
+            if add_label_to_data(row_id, label, username, selected_collection):
+                flash('برچسب با موفقیت اضافه شد.', 'success')
+            else:
+                flash('افزودن برچسب ناموفق بود.', 'danger')
+
+        # Secure redirect with escaped parameter
+        return redirect(url_for('user', selected_collection=escape(selected_collection)))
+
+    except (BadRequest, ValueError) as e:  # Catches invalid ObjectId and custom errors
+        flash('خطا در پردازش درخواست.', 'danger')
+        return redirect(url_for('user'))
+    except Exception as e:
+        flash('خطای سیستمی رخ داد.', 'danger')
+        return redirect(url_for('user'))
 
 
 if __name__ == '__main__':

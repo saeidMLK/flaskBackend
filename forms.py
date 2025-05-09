@@ -147,7 +147,10 @@ class RevokeCollectionFromUserForm(FlaskForm):
     submit = SubmitField('لغو تخصیص', name='revoke')
 
     def set_data_collection_choices(self, selected_user):
-        choices = models.get_user_collection(selected_user)
+        if selected_user:
+            choices = models.get_user_collection(selected_user)
+        else:
+            choices = ['--کاربری یافت نشد.--']
         # print(choices)
         self.data_collection.choices = choices
 
