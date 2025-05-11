@@ -119,7 +119,7 @@ def add_user(username, password, collections, role, creator):
         raise BadRequest("Password must be a string with at least 8 characters")
 
     # Validate role
-    if role not in {'admin', 'user', 'reviewer'}:  # Adjust roles as needed
+    if role not in {'admin', 'user', 'supervisor'}:  # Adjust roles as needed
         raise BadRequest("Invalid user role")
 
     # Validate collections
@@ -516,7 +516,13 @@ def get_user_labels(username, collection_name, page, per_page=10):
 
 
 def get_first_conflict_row(collection_name, threshold):
-    collection = db[collection_name]
+    # Validate collection name using QuerySecurity
+    safe_collection_name = QuerySecurity.validate_input(
+        collection_name,
+        "collection_name")
+
+    collection = db[safe_collection_name]
+
     for document in collection.find():
         if 'label_admin' not in document:
             labels = document.get("label", {})
@@ -573,11 +579,21 @@ def set_data_configs(data_collection, labels, num_required_labels):
     ConfigDB.update_data_labels(data_collection, array_of_labels)
     return ConfigDB.set_num_required_labels(data_collection, num_required_labels)
 
-
+#safe
 def calculate_and_set_average_label(collection_name):
     try:
-        collection = db[collection_name]
+        # 1. Validate collection name
+        safe_collection_name = QuerySecurity.validate_input(
+            collection_name,
+            "collection_name",
+            max_length=100  # Adjust as needed
+        )
+
+        collection = db[safe_collection_name]
+
+        # 2. Secure find operation
         for document in collection.find():
+            # Calculate average label (business logic remains unchanged)
             if 'label_admin' in document:
                 average_label = document['label_admin']
             else:
@@ -588,18 +604,26 @@ def calculate_and_set_average_label(collection_name):
                         value_count[value] += 1
                     else:
                         value_count[value] = 1
-                if value_count:
-                    average_label = max(value_count, key=value_count.get)
-                else:
-                    average_label = None  # Or set a default value if no labels are found
-            # Update the document with the calculated average_label
-            collection.update_one(
-                {"_id": document["_id"]},
-                {"$set": {"average_label": average_label}}
-            )
+                average_label = max(value_count, key=value_count.get) if value_count else None
+
+            # 3. Secure update operation
+            update_query = QuerySecurity.secure_query({
+                "_id": document["_id"]
+            })
+            update_operation = QuerySecurity.secure_query({
+                "$set": {"average_label": average_label}
+            })
+
+            collection.update_one(update_query, update_operation)
+
         return True
-    except Exception:
-        return False
+
+    except BadRequest:
+        raise  # Re-raise validation errors
+    except Exception as e:
+        # Consider custom exception class for DB errors
+        raise RuntimeError("Operation failed") from e
+
 
 
 def get_recent_labels(username, collection_name, limit=10):

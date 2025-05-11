@@ -64,6 +64,11 @@ def home():
     return redirect(url_for('login'))
 
 
+@app.after_request
+def add_header(response):
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    return response
+
 # Global dictionary to track login attempts
 login_attempts = {}
 @app.route('/login', methods=['GET', 'POST'])
@@ -176,7 +181,7 @@ def sign_up():
     return render_template('registration/sign_up.html', form=form, collections_choices=collections_choices)
 
 
-@app.route('/admin', methods=['GET', 'POST'])
+@app.route('/admin', methods=['GET'])
 @role_required('admin')
 def admin():
     # return render_template('access/admin/admin_base.html')
@@ -401,8 +406,15 @@ def get_users_by_collection():
 @app.route('/get_users/<collection_name>', methods=['GET'])
 @role_required('admin')
 def get_users(collection_name):
-    users = get_collection_users(collection_name)
-    user_choices = [user.username for user in users]
+    # 1. Validate collection name format
+    if not isinstance(collection_name, str):
+        raise BadRequest("Collection name must be a string")
+
+    safe_collection = secure_filename(collection_name)
+
+    users = get_collection_users(safe_collection)
+    # user_choices = [user.username for user in users]
+    user_choices = [escape(user.username) for user in users]
     return jsonify(user_choices)
 
 
@@ -474,10 +486,11 @@ def admin_db_management():
 
             if conflict_search_form.validate_on_submit():
                 label = conflict_search_form.label.data
-                row_id = request.form.get('row_id')
+                # row_id = request.form.get('row_id')
+                row_id = ObjectId(request.form.get('row_id'))  # Validates ObjectId format
                 if row_id:
                     try:
-                        row_id = ObjectId(row_id)
+                        # row_id = ObjectId(row_id)
                         if set_admin_label_for_conflicts(collection, row_id, label):
                             flash('برچسب با موفقیت افزوده شد.', 'success')
                         else:
@@ -515,10 +528,11 @@ def admin_db_management():
             conflict_search_form.set_label_choices(collection)  # Set label choices based on selected collection
             threshold = float(request.form.get('hidden_threshold', 0.5))  # Retrieve the threshold from the hidden field
             if conflict_search_form.validate_on_submit():
-                row_id = request.form.get('row_id')
+                # row_id = request.form.get('row_id')
+                row_id = ObjectId(request.form.get('row_id'))  # Validates ObjectId format
                 if row_id:
                     try:
-                        row_id = ObjectId(row_id)
+                        # row_id = ObjectId(row_id)
                         if remove_conflicted_row(collection, row_id):
                             flash('داده با موفقیت حذف شد.', 'success')
                         else:
@@ -710,13 +724,15 @@ def user():
     if request.method == 'POST':
         # This handles the form submission from the collection buttons
         if collections:
-            selected_collection = request.form.get('collection', collections[0])
+            selected_collection = escape(secure_filename(request.form.get('collection', collections[0])))
+            # selected_collection = request.form.get('collection', collections[0])
         else:
             return render_template('main/error_user.html')
     else:
         if collections:
             # This handles the redirect from the edit_label route or GET request
-            selected_collection = request.args.get('selected_collection', collections[0])
+            selected_collection = escape(secure_filename(request.args.get('selected_collection', collections[0])))
+            # selected_collection = request.args.get('selected_collection', collections[0])
         else:
             return render_template('main/error_user.html')
 
@@ -797,12 +813,6 @@ def read_one_row_data():
     return redirect(url_for('user'))
 
 
-from markupsafe import escape
-from werkzeug.utils import secure_filename
-from bson import ObjectId
-from werkzeug.exceptions import BadRequest
-
-
 @app.route('/add_label', methods=['POST'])
 @role_required('user')
 @login_required
@@ -839,5 +849,5 @@ def add_label():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=4001)
+    app.run(debug=False, host='0.0.0.0', port=4001)
 # , ssl_context=(ConfigApp.cert, ConfigApp.key)
