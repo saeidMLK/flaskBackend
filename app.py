@@ -23,7 +23,8 @@ from models import find_user, add_user, check_password, find_user_by_id, remove_
     get_top_users, get_data_states, set_data_state, insert_data_into_collection, \
     assign_collection_to_user, get_supervisor_s_users, remove_data_collection, remove_conflicted_row, \
     revoke_collection_from_user, change_password #, rename_collection_if_exist, get_user_role
-from extensions import sanitize_input, generate_captcha, clear_old_captchas  # , limiter
+from extensions import (sanitize_input, generate_captcha, sanitize_and_validate_input, get_validated_object_id,
+                        clear_old_captchas)  # , limiter
 # Import the api.py to include API routes
 # import api
 from extensions import csrf, login_manager  # Import CSRF and login manager from extensions.py
@@ -167,7 +168,9 @@ def sign_up():
         # Process the form data (e.g., save user to database)
         sanitized_username = sanitize_input(form.username.data)
         # Get the selected collections from the hidden input
-        selected_collections = request.form.get('collections', '')  # Comma-separated string
+        selected_collections = str(request.form.get('collections', ''))  # Comma-separated string
+        selected_collections = sanitize_and_validate_input(selected_collections, max_length=1000)
+
         collections_list = selected_collections.split(',') if selected_collections else []
         # print(collections_list)
         if add_user(sanitized_username, form.password.data, collections_list, form.role.data, current_user.username):
@@ -267,6 +270,7 @@ def admin_user_management():
 @app.route('/get_choices')
 def get_choices():
     username = request.args.get('username')
+    username = sanitize_and_validate_input(username)
     collections = get_user_collection(username)
     choices = collections if username else []
     return jsonify(choices)
@@ -393,6 +397,7 @@ def admin_report():
 @role_required('admin')
 def get_users_by_collection():
     collection = request.form.get('collection')
+    collection = sanitize_and_validate_input(collection)
     # print(f"Received Collection: {collection}")  # Debugging output
 
     users = get_collection_users(collection)
@@ -406,6 +411,7 @@ def get_users_by_collection():
 @app.route('/get_users/<collection_name>', methods=['GET'])
 @role_required('admin')
 def get_users(collection_name):
+    collection_name = sanitize_and_validate_input(collection_name)
     # 1. Validate collection name format
     if not isinstance(collection_name, str):
         raise BadRequest("Collection name must be a string")
@@ -476,6 +482,7 @@ def admin_db_management():
         elif 'set_label' in request.form:
             # Secure in one line (no strip needed)
             collection = escape(secure_filename(request.form.get('hidden_collection', '')))
+            collection = sanitize_and_validate_input(collection)
             # Validation
             if not collection:
                 raise BadRequest("Collection name is required")
@@ -487,7 +494,9 @@ def admin_db_management():
             if conflict_search_form.validate_on_submit():
                 label = conflict_search_form.label.data
                 # row_id = request.form.get('row_id')
-                row_id = ObjectId(request.form.get('row_id'))  # Validates ObjectId format
+                # row_id = ObjectId(request.form.get('row_id'))  # Validates ObjectId format
+                row_id = get_validated_object_id('row_id')
+
                 if row_id:
                     try:
                         # row_id = ObjectId(row_id)
@@ -520,6 +529,7 @@ def admin_db_management():
         elif 'remove_row' in request.form:
             # Secure in one line (no strip needed)
             collection = escape(secure_filename(request.form.get('hidden_collection', '')))
+            collection = sanitize_and_validate_input(collection)
             # Validation
             if not collection:
                 raise BadRequest("Collection name is required")
@@ -529,7 +539,9 @@ def admin_db_management():
             threshold = float(request.form.get('hidden_threshold', 0.5))  # Retrieve the threshold from the hidden field
             if conflict_search_form.validate_on_submit():
                 # row_id = request.form.get('row_id')
-                row_id = ObjectId(request.form.get('row_id'))  # Validates ObjectId format
+                # row_id = ObjectId(request.form.get('row_id'))  # Validates ObjectId format
+                row_id = get_validated_object_id('row_id')
+
                 if row_id:
                     try:
                         # row_id = ObjectId(row_id)
@@ -542,6 +554,7 @@ def admin_db_management():
                 else:
                     flash('No row ID provided.', 'danger')
                 conflict_row = get_first_conflict_row(collection, threshold)  # Retrieve the next conflict row with the threshold
+                print(conflict_row)
             else:
                 flash('Form validation failed.', 'danger')
 
@@ -725,14 +738,15 @@ def user():
         # This handles the form submission from the collection buttons
         if collections:
             selected_collection = escape(secure_filename(request.form.get('collection', collections[0])))
-            # selected_collection = request.form.get('collection', collections[0])
+            selected_collection = sanitize_and_validate_input(selected_collection)
         else:
             return render_template('main/error_user.html')
     else:
         if collections:
             # This handles the redirect from the edit_label route or GET request
-            selected_collection = escape(secure_filename(request.args.get('selected_collection', collections[0])))
-            # selected_collection = request.args.get('selected_collection', collections[0])
+            s_c = str(request.args.get('selected_collection', collections[0]))
+            selected_collection = escape(secure_filename(s_c))
+            selected_collection = sanitize_and_validate_input(selected_collection)
         else:
             return render_template('main/error_user.html')
 
@@ -772,10 +786,13 @@ def user():
 def edit_label():
     try:
         # Validate and sanitize inputs
-        row_id = ObjectId(request.form['row_id'])  # Validates ObjectId format
-        new_label_value = escape(request.form['label_value'].strip())  # XSS protection + trim
-        selected_collection = secure_filename(request.form.get('selected_collection', ''))  # Path traversal protection
+        # row_id = ObjectId(str(request.form['row_id']))  # Validates ObjectId format
+        row_id = get_validated_object_id('row_id')
 
+        new_label_value = escape(request.form['label_value'].strip())  # XSS protection + trim
+        new_label_value = sanitize_and_validate_input(new_label_value)
+        selected_collection = secure_filename(request.form.get('selected_collection', ''))  # Path traversal protection
+        selected_collection = sanitize_and_validate_input(selected_collection)
         # Additional validation (optional)
         if not selected_collection:
             raise BadRequest("Collection name is required")
@@ -820,6 +837,7 @@ def add_label():
     try:
         # Secure the selected_collection input
         selected_collection = secure_filename(request.form.get('selected_collection', ''))
+        selected_collection = sanitize_and_validate_input(selected_collection)
         if not selected_collection:
             raise BadRequest("Collection name is required")
 

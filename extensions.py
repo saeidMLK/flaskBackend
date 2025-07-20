@@ -3,6 +3,10 @@ from captcha.image import ImageCaptcha
 import random
 import string
 import os
+import html
+from flask import request, abort
+from bson import ObjectId, errors
+
 
 # from flask_limiter import Limiter
 # from flask_limiter.util import get_remote_address
@@ -60,3 +64,76 @@ def clear_old_captchas():
 
 # captcha_text, captcha_path = generate_captcha()
 
+
+
+def sanitize_and_validate_input(value, *, allow_spaces=True, allow_html=False, max_length=100):
+    """
+    Cleans and validates user input to prevent:
+    - SQL/NoSQL injection
+    - XSS (stored/reflected)
+    - Path traversal or command injection
+
+    Args:
+        value (str): The raw user input
+        allow_spaces (bool): If False, collapses/removes spaces
+        allow_html (bool): If True, allows basic HTML (use with care!)
+        max_length (int): Maximum length for any input
+
+    Returns:
+        str: Safe, cleaned input
+
+    Raises:
+        ValueError: If input is unsafe or invalid
+    """
+
+    if not isinstance(value, str):
+        raise ValueError("Input must be a string")
+
+    # Trim whitespace
+    value = value.strip()
+
+    # Remove null bytes
+    value = value.replace('\x00', '')
+
+    # Length check
+    if len(value) > max_length:
+        raise ValueError("Input too long")
+
+    # Optional HTML escaping
+    if not allow_html:
+        value = html.escape(value, quote=True)
+
+    # Basic XSS prevention: remove script-ish stuff
+    dangerous_patterns = [
+        r'<script.*?>.*?</script>',
+        r'javascript:',
+        r'on\w+\s*=',           # e.g., onclick=
+        r'document\.',
+        r'window\.',
+        r'eval\(',
+        r'alert\('
+    ]
+    for pattern in dangerous_patterns:
+        value = re.sub(pattern, '', value, flags=re.IGNORECASE)
+
+    # Allow only certain characters
+    allowed_pattern = r'^[\w,\- ]+$' if allow_spaces else r'^[\w,\-]+$'
+    if not re.match(allowed_pattern, value):
+        raise ValueError("Input contains invalid characters")
+
+    # Collapse multiple spaces
+    if allow_spaces:
+        value = re.sub(r'\s+', ' ', value)
+
+    if not value:
+        raise ValueError("Input is empty or invalid")
+
+    return value
+
+
+def get_validated_object_id(field_name):
+    raw_id = request.form.get(field_name)
+    try:
+        return ObjectId(str(raw_id))
+    except (errors.InvalidId, TypeError):
+        abort(400, f"Invalid ObjectId for field: {field_name}")
