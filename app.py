@@ -399,12 +399,9 @@ def get_users_by_collection():
     collection = request.form.get('collection')
     collection = sanitize_and_validate_input(collection)
     # print(f"Received Collection: {collection}")  # Debugging output
-
     users = get_collection_users(collection)
     user_list = [user.username for user in users] if users else ['--کاربری یافت نشد.--']
-
     # print(f"User List: {user_list}")  # Debugging output
-
     return jsonify(users=user_list)
 
 
@@ -462,7 +459,13 @@ def admin_db_management():
     # users = get_all_users()
     # extracted = request.args.get('extracted', False)
     # Secured parameter handling:
-    extracted = request.args.get('extracted', 'false').lower() == 'true'
+    # extracted = request.args.get('extracted', 'false').lower() == 'true'
+    extracted_raw = request.args.get('extracted', 'false')
+    if extracted_raw.lower() not in ['true', 'false']:
+        extracted = False  # fallback default
+    else:
+        extracted = extracted_raw.lower() == 'true'
+
     # For downloading the collection.
     if collections:
         selected_collection = escape(secure_filename(request.args.get('collection_name', collections[0])))
@@ -626,33 +629,40 @@ def extract_db():
 @role_required('admin', 'supervisor')
 def download_file(collection_name):
     # 1. Sanitize the collection name to prevent path traversal
-    safe_collection = secure_filename(unquote(collection_name))
-
-    # 2. Validate the filename format (customize as needed)
-    if not safe_collection.isidentifier():  # Only allow alphanumeric + underscores
+    # safe_collection = secure_filename(unquote(collection_name))
+    try:
+        # Decode and sanitize input
+        decoded_name = unquote(collection_name)
+        safe_name = sanitize_and_validate_input(decoded_name, allow_spaces=False, allow_html=False, max_length=50)
+    except ValueError:
         flash('Invalid collection name.', 'danger')
         return redirect(url_for('admin_db_management'))
 
-    # 3. Construct a secure path
-    base_dir = os.path.abspath('static/db')  # Absolute path to prevent traversal
-    file_name = f'db_{safe_collection}.json'
+    # Apply secure_filename as an extra layer (trims unsafe path characters)
+    safe_name = secure_filename(safe_name)
+
+    # Build file path safely
+    base_dir = os.path.abspath('static/db')
+    file_name = f'db_{safe_name}.json'
     file_path = os.path.join(base_dir, file_name)
 
-    # 4. Verify the file exists within the intended directory
+    # Validate path traversal
     if not os.path.realpath(file_path).startswith(base_dir):
         flash('Invalid file path.', 'danger')
         return redirect(url_for('admin_db_management'))
 
-    # 5. Serve the file (escaping is handled by Flask's send_file)
-    try:
-        return send_file(
-            file_path,
-            as_attachment=True,
-            download_name=f'extracted_{safe_collection}.json'  # Safe (escaped by Flask)
-        )
-    except FileNotFoundError:
-        flash('The requested file was not found on the server.', 'danger')  # Static message (no XSS)
+        # Check file existence
+    if not os.path.exists(file_path):
+        flash('The requested file was not found on the server.', 'danger')
         return redirect(url_for('admin_db_management'))
+
+    # Send file with secure headers to avoid reflected XSS
+    return send_file(
+        file_path,
+        as_attachment=True,
+        download_name=f'extracted_{safe_name}.json',
+        mimetype='application/json'  # This is critical to prevent XSS
+    )
 
 
 @app.route('/import_db', methods=['POST'])

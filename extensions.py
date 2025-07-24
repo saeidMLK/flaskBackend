@@ -6,6 +6,8 @@ import os
 import html
 from flask import request, abort
 from bson import ObjectId, errors
+from markupsafe import escape
+from bson import ObjectId, errors as bson_errors
 
 
 # from flask_limiter import Limiter
@@ -137,3 +139,24 @@ def get_validated_object_id(field_name):
         return ObjectId(str(raw_id))
     except (errors.InvalidId, TypeError):
         abort(400, f"Invalid ObjectId for field: {field_name}")
+
+def validate_object_id_from_db(value):
+    """
+    Validates and safely converts values from the database to ObjectId
+    to prevent second-order injection attacks.
+    """
+    try:
+        if isinstance(value, ObjectId):
+            return value
+        return ObjectId(str(value))
+    except (bson_errors.InvalidId, TypeError, ValueError):
+        raise ValueError("Invalid ObjectId in database")
+
+def sanitize_document(document):
+    safe_document = {}
+    for k, v in document.items():
+        if isinstance(v, str):
+            safe_document[k] = escape(v)
+        else:
+            safe_document[k] = v
+    return safe_document

@@ -10,6 +10,8 @@ from bson import SON, ObjectId
 from werkzeug.exceptions import BadRequest
 import re
 import os
+from extensions import sanitize_document, validate_object_id_from_db
+from bson import ObjectId, errors as bson_errors
 
 client = MongoClient(ConfigDB.MONGODB_URI)
 db = client[ConfigDB.MONGO_DBNAME]
@@ -376,7 +378,7 @@ def get_collection_users(collection_name):
                 except (AttributeError, ValueError) as e:
                     continue  # Skip invalid user documents
 
-        return users if users else None
+        return sanitize_document(users) if users else None
 
     except BadRequest:
         raise  # Re-raise validation errors
@@ -534,7 +536,7 @@ def get_first_conflict_row(collection_name, threshold):
 
                 max_label_rate = max(label_counts.values()) / total_labels
                 if max_label_rate < threshold:
-                    return document
+                    return sanitize_document(document)
     return None
 
 
@@ -593,6 +595,12 @@ def calculate_and_set_average_label(collection_name):
 
         # 2. Secure find operation
         for document in collection.find():
+            # Validate document ID
+            try:
+                doc_id = validate_object_id_from_db(document["_id"])
+            except ValueError:
+                continue  # Skip unsafe document
+
             # Calculate average label (business logic remains unchanged)
             if 'label_admin' in document:
                 average_label = document['label_admin']
@@ -608,7 +616,7 @@ def calculate_and_set_average_label(collection_name):
 
             # 3. Secure update operation
             update_query = QuerySecurity.secure_query({
-                "_id": document["_id"]
+                "_id": doc_id
             })
             update_operation = QuerySecurity.secure_query({
                 "$set": {"average_label": average_label}
