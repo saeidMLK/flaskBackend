@@ -9,9 +9,6 @@ import json
 from bson import SON, ObjectId
 from werkzeug.exceptions import BadRequest
 import re
-import os
-from extensions import sanitize_document, validate_object_id_from_db
-from bson import ObjectId, errors as bson_errors
 
 client = MongoClient(ConfigDB.MONGODB_URI)
 db = client[ConfigDB.MONGO_DBNAME]
@@ -28,7 +25,7 @@ class QuerySecurity:
     }
 
     @staticmethod
-    def validate_input(value, field_name, max_length=200):
+    def validate_input(value, field_name, max_length=100):
         """Universal input validator"""
         if value is None:
             raise BadRequest(f"{field_name} cannot be None")
@@ -80,6 +77,9 @@ class QuerySecurity:
             raise BadRequest("Invalid query parameters")
 
 
+
+# data_collection = db.data
+
 class User(UserMixin):
     def __init__(self, user_data):
         self.id = user_data['_id']
@@ -93,67 +93,27 @@ class User(UserMixin):
             return User(doc)
         return None
 
-#safe
+
 def find_user(username):
-    # Validate username input
-    safe_username = QuerySecurity.validate_input(
-        username,
-        "username")
-
-    # Build secure query
-    query = QuerySecurity.secure_query({'username': {'$eq': safe_username}})
-
-    # Execute query
-    user_data = users_collection.find_one(query)
-
-    return User.from_document(user_data) if user_data else None
+    user_data = users_collection.find_one({'username': username})
+    return User.from_document(user_data)
 
 
 def find_user_by_id(user_id):
     user_data = users_collection.find_one({'_id': ObjectId(user_id)})
     return User.from_document(user_data)
 
-#safe
+
 def add_user(username, password, collections, role, creator):
-    # Validate all inputs
-    safe_username = QuerySecurity.validate_input(username, "username", max_length=50)
-    if not isinstance(password, str):# or len(password) < 8:
-        raise BadRequest("Password must be a string with at least 8 characters")
-
-    # Validate role
-    if role not in {'admin', 'user', 'supervisor'}:  # Adjust roles as needed
-        raise BadRequest("Invalid user role")
-
-    # Validate collections
-    if not isinstance(collections, list):
-        raise BadRequest("Collections must be a list")
-    safe_collections = [QuerySecurity.validate_input(c, "collection") for c in collections]
-
-    # Validate creator
-    safe_creator = QuerySecurity.validate_input(creator, "creator", max_length=50)
-
-    # Check for existing user (secure query)
-    if users_collection.find_one(
-            QuerySecurity.secure_query({'username': {'$eq': safe_username}})
-    ):
-        return False
-
-    # Handle admin case
-    if role == 'admin':
-        safe_collections = ['all']
-
-    # Secure password hashing
-    password_hash = generate_password_hash(password)
-
-    # Insert operation - password_hash excluded from validation
-    users_collection.insert_one({
-        'username': safe_username,
-        'password_hash': password_hash,  # Not validated
-        'collections': safe_collections,
-        'role': role,
-        'creator': [safe_creator]
-    })
-    return True
+    if not find_user(username):
+        password_hash = generate_password_hash(password)
+        if role == 'admin':
+            collections = ['all']
+        users_collection.insert_one(
+            {'username': username, 'password_hash': password_hash, 'collections': collections, 'role': role,
+             'creator': [creator]})
+        return True
+    return False
 
 
 def get_all_users():
@@ -168,19 +128,14 @@ def get_supervisor_s_users(username):
     return users
 
 
-# def get_user_role(user_name):
-#     user = users_collection.find_one({'username': user_name})
-#     return user['role'] if user else None
+def get_user_role(user_name):
+    user = users_collection.find_one({'username': user_name})
+    return user['role'] if user else None
 
-#safe
+
 def remove_user_by_name(username):
-    # Validate input using QuerySecurity
-    safe_username = QuerySecurity.validate_input(username, "username")
-
-    # Maintain original admin protection
-    if safe_username != 'admin':
-        # Use secure query
-        query = QuerySecurity.secure_query({'username': safe_username})
+    if username != 'admin':
+        query = {'username': username}
         users_collection.delete_one(query)
         return True
     return False
@@ -200,51 +155,32 @@ def get_db_collection_names(sys_collections_included=0):
         filtered_list = list(set(collections) - items_to_remove)
         return filtered_list
 
-#safe
-def extract_db_collection(path, collection_name, chunk_size=10000):
-    # Validate inputs
-    safe_collection = QuerySecurity.validate_input(collection_name, "collection_name", max_length=64)
-    safe_chunk_size = max(1, min(int(chunk_size), 10001))  # Keep between 1-10,000
 
-    try:
-        with open(path, 'w', encoding='utf-8') as file:
-            file.write('[')  # Start JSON array
+def extract_db_collection(path, collection_name, chunk_size=1000):
+    """
+    Extracts the data from the specified MongoDB collection and writes it to a JSON file in chunks.
+    chunk_size (int): The number of documents to process in each chunk. Default is 1000.
+    """
+    with open(path, 'w', encoding='utf-8') as file:
+        file.write('[')  # Start the JSON array
+        cursor = db[collection_name].find()
+        first = True
+        while True:
+            chunk = []
+            for _ in range(chunk_size):
+                try:
+                    chunk.append(next(cursor))
+                except StopIteration:
+                    break
+            if not chunk:
+                break
+            if not first:
+                file.write(', ')
+            else:
+                first = False
+            file.write(dumps(chunk, ensure_ascii=False)[1:-1])  # Remove the surrounding square brackets
+        file.write(']')  # End the JSON array
 
-            # Get cursor with no timeout
-            cursor = db[safe_collection].find(no_cursor_timeout=True)
-            first_chunk = True
-
-            try:
-                while True:
-                    chunk = []
-                    for _ in range(safe_chunk_size):
-                        try:
-                            doc = next(cursor)
-                            chunk.append(doc)
-                        except StopIteration:
-                            break
-
-                    if not chunk:
-                        break
-
-                    if not first_chunk:
-                        file.write(', ')
-                    else:
-                        first_chunk = False
-
-                    # Write chunk without surrounding brackets
-                    json_chunk = dumps(chunk, ensure_ascii=False)[1:-1]
-                    file.write(json_chunk)
-
-            finally:
-                cursor.close()  # Ensure cursor is always closed
-
-            file.write(']')  # End JSON array
-
-    except Exception as e:
-        if os.path.exists(path):
-            os.remove(path)  # Clean up partial file
-        raise BadRequest(f"Export failed: {str(e)}")
 
 def convert_oid(item):
     if isinstance(item, dict):
@@ -259,218 +195,123 @@ def convert_oid(item):
     return item
 
 
-# def rename_collection_if_exist(collection_name):
-#     if collection_name in db.list_collection_names():
-#         if f'{collection_name}_old' in db.list_collection_names():
-#             db.drop_collection(f'{collection_name}_old')
-#         db[collection_name].rename(f'{collection_name}_old')
-#         return True
-#     return False
+def rename_collection_if_exist(collection_name):
+    if collection_name in db.list_collection_names():
+        if f'{collection_name}_old' in db.list_collection_names():
+            db.drop_collection(f'{collection_name}_old')
+        db[collection_name].rename(f'{collection_name}_old')
+        return True
+    return False
 
-#safe
+
 def import_db_collection(username, collection_name, data):
-    # Validate all string inputs
-    safe_username = QuerySecurity.validate_input(username, "username", max_length=50)
-    safe_collection = QuerySecurity.validate_input(collection_name, "collection_name", max_length=64)
+    # Process the data to wrap each row in a "data" key
+    processed_data = [{"data": row} for row in data]
 
-    # Validate data structure
-    if not isinstance(data, list) or len(data) == 0:
-        raise BadRequest("Data must be a non-empty list")
+    # Add processed dataset to the collection
+    processed_data = convert_oid(processed_data)  # Convert ObjectId if necessary
+    db[collection_name].insert_many(processed_data)
 
-    processed_data = []
-    for row in data:
-        # Basic type check
-        if not isinstance(row, dict):
-            raise BadRequest("Each row must be a dictionary")
+    # Update the user's collections in the "users" collection
+    db.users.update_one(
+        {'username': username},
+        {'$addToSet': {'collections': collection_name}}
+        # Add the collection name if it's not already present, add collection name in user profile
+    )
 
-        # Optional: validate specific dangerous fields
-        if "_id" in row:
-            QuerySecurity.validate_input(row["_id"], "row _id")
+    # Set initial configs for new dataset
+    ConfigDB.update_data_labels(collection_name, [])
+    ConfigDB.set_num_labels(collection_name, 0)
+    ConfigDB.set_num_required_labels(collection_name, 1)
+    db['config'].update_one(
+        {'collection': collection_name},  # Match the document
+        {'$set': {'finished_by': []}})
+    return set_data_state(collection_name)
 
-        processed_data.append({"data": row})  # Keep original data intact
 
-    # Secure database operations
-    try:
-        # Insert processed data
-        processed_data = convert_oid(processed_data)
-        db[safe_collection].insert_many(processed_data)
-        # Update user's collections
-        db.users.update_one(
-            QuerySecurity.secure_query({'username': safe_username}),
-            QuerySecurity.secure_query({
-                '$addToSet': {'collections': safe_collection}
-            })
-        )
-        # Set initial configs
-        ConfigDB.update_data_labels(safe_collection, [])
-        ConfigDB.set_num_labels(safe_collection, 0)
-        ConfigDB.set_num_required_labels(safe_collection, 1)
-        db['config'].update_one(
-            QuerySecurity.secure_query({'collection': safe_collection}),
-           {'$set': {'finished_by': []}})
-        return set_data_state(safe_collection)
-
-    except Exception as e:
-        # Rollback if any operation fails?
-        raise BadRequest(f"Database operation failed: {str(e)}")
-
-#safe
 def get_user_collection(username):
-    """Get user's collection with security validation"""
-    try:
-        # Validate username input
-        safe_username = QuerySecurity.validate_input(
-            username,
-            "username",
-            max_length=50  # Adjust max length as needed
-        )
-
-        # Build secure query
-        query = QuerySecurity.secure_query({
-            "username": {"$eq": safe_username}
-        })
-
-        # Execute query
-        user = users_collection.find_one(query)
-
-        # Safely access nested field
-        if user and isinstance(user.get("collections"), (str, list, dict)):
-            return user["collections"]
+    user = users_collection.find_one({"username": username})
+    if user:
+        collection = user.get("collections")
+        return collection
+    else:
         return None
 
-    except BadRequest as e:
-        # Re-raise with original error message
-        raise
-    except Exception as e:
-        # Generic error handling (optional)
-        raise ValueError("Failed to retrieve user collection") from e
 
-#safe
 def get_collection_users(collection_name):
-    """Get all users belonging to a specific collection with full security validation"""
-    try:
-        # 1. Strict input validation
-        safe_collection = QuerySecurity.validate_input(
-            collection_name,
-            "collection_name",
-            max_length=100  # Adjust based on your needs
-        )
-
-        # 2. Build parameterized query
-        query = QuerySecurity.secure_query({
-            'collections': {
-                '$eq': safe_collection  # Explicit equality match
-                # Alternative for array fields: '$in' if collections is an array
-            }
-        })
-
-        # 3. Execute secured query
-        user_docs = db.users.find(query)
-
-        # 4. Safe document processing
-        users = []
-        for doc in user_docs:
-            if isinstance(doc, dict):  # Verify document type
-                try:
-                    user = User.from_document(doc)
-                    if user:  # Verify valid user object
-                        users.append(user)
-                except (AttributeError, ValueError) as e:
-                    continue  # Skip invalid user documents
-
-        return sanitize_document(users) if users else None
-
-    except BadRequest:
-        raise  # Re-raise validation errors
-    except Exception as e:
-        # Consider custom exception class for DB errors
-        raise RuntimeError("Failed to retrieve collection users") from e
-
-#safe
-def read_one_row_of_data(username, collection_name):
-    """Get next unlabeled row for user with security but same functionality"""
-    try:
-        # Validate inputs (silent version without logging)
-        if not isinstance(username, str) or not username.strip():
-            raise ValueError("Invalid username")
-        if not isinstance(collection_name, str) or not collection_name.strip():
-            raise ValueError("Invalid collection name")
-
-        safe_username = username.strip()
-        safe_collection = collection_name.strip()
-
-        # Get collection - same as original
-        collection = db[safe_collection]
-
-        # Find all documents - maintaining original functionality
-        rows = collection.find({})
-        rows_with_label_count = [
-            (row, len(row.get("label", {}))) for row in rows
-            if isinstance(row, dict) and isinstance(row.get("label", {}), dict)
-        ]
-
-        # Sort exactly as before
-        sorted_rows = sorted(rows_with_label_count, key=lambda x: x[1])
-
-        # Find first unlabeled row - preserving original logic
-        for row, _ in sorted_rows:
-            if isinstance(row, dict) and safe_username not in row.get("label", {}):
-                # Ensure the row has all expected fields
-                if not all(key in row for key in ['data', '_id']):
-                    continue
-                return row
-
-        # Config update - same logic but with basic validation
-        config_data = db['config'].find_one({'collection': safe_collection})
-        if config_data:
-            num_labels = config_data.get('num_labels', 0) + 1
-            update_op = {
-                '$inc': {'num_labels': 1},
-                '$addToSet': {'finished_by': safe_username}
-            }
-        else:
-            num_labels = 1
-            update_op = {
-                '$set': {
-                    'collection': safe_collection,
-                    'num_labels': num_labels,
-                    'finished_by': [safe_username]
-                }
-            }
-
-        db['config'].update_one(
-            {'collection': safe_collection},
-            update_op,
-            upsert=True
-        )
-
-        set_data_state(safe_collection)
+    from bson.son import SON
+    query = SON([("collections", collection_name)])  # Forces literal interpretation
+    db.users.find(query)
+    # Using a direct equality match is safer than allowing operator injection
+    user_docs = db.users.find({'collections': {'$eq': collection_name}})
+    # user_docs = db.users.find({'collections': collection_name})
+    users = [User.from_document(doc) for doc in user_docs]
+    if users:
+        return users
+    else:
         return None
 
-    except Exception as e:
-        # Preserve original error handling
-        raise ValueError(f"Error accessing data: {str(e)}")
 
-#safe
+# def read_one_row_of_data(username, collection_name):
+#     # collection_name = get_user_collection(username)
+#     collection = db[collection_name]
+#     # Iterate through each document in the collection
+#     for row in collection.find():
+#         # Check if the name does not exist as a key within the "label" object
+#         if username not in row.get("label", {}):
+#             return row
+#     # If no such row is found, return None
+#     return None
+def read_one_row_of_data(username, collection_name):
+    collection = db[collection_name]
+
+    # Find all documents and annotate with the number of labels
+    rows = collection.find()
+    rows_with_label_count = [
+        (row, len(row.get("label", {}))) for row in rows
+    ]
+
+    # Sort rows by the number of labels in ascending order
+    sorted_rows = sorted(rows_with_label_count, key=lambda x: x[1])
+
+    # Iterate through sorted rows to find the one not labeled by the user
+    for row, label_count in sorted_rows:
+        if username not in row.get("label", {}):
+            return row
+
+    # If no such row is found it means user finished labeling for this and increase num_labels
+    # , return None
+    collection = db['config'].find_one({'collection': collection_name})
+    num_labels = collection['num_labels'] + 1
+
+    # Check if the field exists
+    if 'finished_by' in collection:
+        # Check if the value already exists in the field
+        if username not in collection['finished_by']:
+            # Add the new value to the field
+            db['config'].update_one(
+                {'collection': collection_name},  # Match the document
+                {'$push': {'finished_by': username}, '$set': {'num_labels': num_labels}}
+            )
+    else:
+        # Add the new field with the value
+        db['config'].update_one(
+            {'collection': collection_name},  # Match the document
+            {'$set': {'finished_by': username, 'num_labels': num_labels}}
+        )
+    set_data_state(collection_name)
+    return None
+
+
 def add_label_to_data(row_id, label, username, collection_name):
-    try:
-        safe_row_id = ObjectId(row_id)  # Will raise exception if invalid
-    except:
-        raise BadRequest("Invalid document ID format")
-
-    safe_label = QuerySecurity.validate_input(label, "label", max_length=400)
-    safe_username = QuerySecurity.validate_input(username, "username")
-    safe_collection = QuerySecurity.validate_input(collection_name, "collection_name")
-
-    # Build secure query
-    collection = db[safe_collection]
-    query = QuerySecurity.secure_query({"_id": safe_row_id})
-    update = QuerySecurity.secure_query({
-        "$set": {f"label.{safe_username}": safe_label}
-    })
-
-    # Execute update
-    result = collection.update_one(query, update)
+    # collection_name = get_user_collection(username)
+    collection = db[collection_name]
+    # Update the document with the provided row_id
+    result = collection.update_one(
+        {"_id": ObjectId(row_id)},
+        {"$set": {f"label.{username}": label}}
+    )
+    # Check if the update was successful
     return result.modified_count == 1
 
 
@@ -507,24 +348,18 @@ def get_user_performance(username, collection_name):
 
 
 def get_user_labels(username, collection_name, page, per_page=10):
-    safe_username = QuerySecurity.validate_input(username, "username")
+    # collection_name = get_user_collection(username)
     collection = db[collection_name]
     # Skip and limit for pagination
     skip = (page - 1) * per_page
-    rows_cursor = collection.find({f"label.{safe_username}": {"$exists": True}}).skip(skip).limit(per_page)
+    rows_cursor = collection.find({f"label.{username}": {"$exists": True}}).skip(skip).limit(per_page)
     rows = [{"row": row.get('data'), "answer": row.get('label')} for row in rows_cursor]
-    total_rows = get_user_performance(safe_username, collection_name)[0]
+    total_rows = get_user_performance(username, collection_name)[0]
     return rows, total_rows
 
 
 def get_first_conflict_row(collection_name, threshold):
-    # Validate collection name using QuerySecurity
-    safe_collection_name = QuerySecurity.validate_input(
-        collection_name,
-        "collection_name")
-
-    collection = db[safe_collection_name]
-
+    collection = db[collection_name]
     for document in collection.find():
         if 'label_admin' not in document:
             labels = document.get("label", {})
@@ -536,42 +371,22 @@ def get_first_conflict_row(collection_name, threshold):
 
                 max_label_rate = max(label_counts.values()) / total_labels
                 if max_label_rate < threshold:
-                    return sanitize_document(document)
+                    return document
     return None
 
 
-#safe
 def set_admin_label_for_conflicts(collection_name, row_id, label):
-    # Validate all inputs using QuerySecurity
-    safe_collection = QuerySecurity.validate_input(
-        collection_name,
-        "collection_name")
-    safe_row_id = QuerySecurity.validate_input(row_id, "row_id")
-    safe_label = QuerySecurity.validate_input(label, "label", max_length=500)  # Adjust max length as needed
-
-    # Build secure query
-    collection = db[safe_collection]
-    query = QuerySecurity.secure_query({"_id": safe_row_id})
-    update = QuerySecurity.secure_query({"$set": {"label_admin": safe_label}})
-
-    # Execute with original behavior
-    result = collection.update_one(query, update)
+    collection = db[collection_name]
+    result = collection.update_one(
+        {"_id": row_id},
+        {"$set": {"label_admin": label}}
+    )
     return result.modified_count == 1
 
-#safe
+
 def remove_conflicted_row(collection_name, row_id):
-    # Validate inputs using QuerySecurity
-    safe_collection = QuerySecurity.validate_input(
-        collection_name,
-        "collection_name")
-    safe_row_id = QuerySecurity.validate_input(row_id, "row_id")
-
-    # Build secure query
-    collection = db[safe_collection]
-    query = QuerySecurity.secure_query({"_id": safe_row_id})
-
-    # Execute with original behavior
-    result = collection.delete_one(query)
+    collection = db[collection_name]
+    result = collection.delete_one({"_id": row_id})
     return result.deleted_count == 1
 
 
@@ -581,27 +396,11 @@ def set_data_configs(data_collection, labels, num_required_labels):
     ConfigDB.update_data_labels(data_collection, array_of_labels)
     return ConfigDB.set_num_required_labels(data_collection, num_required_labels)
 
-#safe
+
 def calculate_and_set_average_label(collection_name):
     try:
-        # 1. Validate collection name
-        safe_collection_name = QuerySecurity.validate_input(
-            collection_name,
-            "collection_name",
-            max_length=100  # Adjust as needed
-        )
-
-        collection = db[safe_collection_name]
-
-        # 2. Secure find operation
+        collection = db[collection_name]
         for document in collection.find():
-            # Validate document ID
-            try:
-                doc_id = validate_object_id_from_db(document["_id"])
-            except ValueError:
-                continue  # Skip unsafe document
-
-            # Calculate average label (business logic remains unchanged)
             if 'label_admin' in document:
                 average_label = document['label_admin']
             else:
@@ -612,32 +411,24 @@ def calculate_and_set_average_label(collection_name):
                         value_count[value] += 1
                     else:
                         value_count[value] = 1
-                average_label = max(value_count, key=value_count.get) if value_count else None
-
-            # 3. Secure update operation
-            update_query = QuerySecurity.secure_query({
-                "_id": doc_id
-            })
-            update_operation = QuerySecurity.secure_query({
-                "$set": {"average_label": average_label}
-            })
-
-            collection.update_one(update_query, update_operation)
-
+                if value_count:
+                    average_label = max(value_count, key=value_count.get)
+                else:
+                    average_label = None  # Or set a default value if no labels are found
+            # Update the document with the calculated average_label
+            collection.update_one(
+                {"_id": document["_id"]},
+                {"$set": {"average_label": average_label}}
+            )
         return True
-
-    except BadRequest:
-        raise  # Re-raise validation errors
-    except Exception as e:
-        # Consider custom exception class for DB errors
-        raise RuntimeError("Operation failed") from e
-
+    except Exception:
+        return False
 
 
 def get_recent_labels(username, collection_name, limit=10):
-    safe_username = QuerySecurity.validate_input(username, "username", max_length=50)
+    # collections = get_user_collection(username)
     collection = db[collection_name]
-    rows = collection.find({f"label.{safe_username}": {"$exists": True}}, {'data': 1, 'label': 1}).sort('_id', -1).limit(
+    rows = collection.find({f"label.{username}": {"$exists": True}}, {'data': 1, 'label': 1}).sort('_id', -1).limit(
         limit)
     recent_labels = []
     for row in rows:
@@ -645,33 +436,13 @@ def get_recent_labels(username, collection_name, limit=10):
     return recent_labels
 
 
-#safe
 def update_label(row_id, username, new_label_value, collection_name):
-    # Validate all inputs
-    try:
-        safe_row_id = ObjectId(row_id)  # Validates if it's a proper ObjectId
-    except:
-        raise BadRequest("Invalid document ID format")
-
-    safe_username = QuerySecurity.validate_input(username, "username", max_length=50)
-    safe_collection = QuerySecurity.validate_input(collection_name, "collection_name", max_length=100)
-
-    # Validate label value (adjust according to your expected label format)
-    if not isinstance(new_label_value, (str, int, float, bool)):
-        raise BadRequest("Label value must be a string, number, or boolean")
-
-    # Secure field name construction
-    label_field = f"label.{safe_username}"
-    if not re.match(r'^label\.[a-zA-Z0-9_-]+$', label_field):
-        raise BadRequest("Invalid label field format")
-
-    # Secure update operation
-    collection = db[safe_collection]
+    # collection_name = get_user_collection(username)
+    collection = db[collection_name]
     result = collection.update_one(
-        QuerySecurity.secure_query({'_id': {'$eq': safe_row_id}}),
-        QuerySecurity.secure_query({'$set': {label_field: new_label_value}})
+        {'_id': ObjectId(row_id)},
+        {'$set': {f'label.{username}': new_label_value}}
     )
-
     return result.modified_count > 0
 
 
@@ -679,52 +450,25 @@ def get_label_options(collection_name):
     return ConfigDB.get_data_labels(collection_name)
 
 
-#safe
 def set_data_state(collection_name):
-    # Validate input first
-    safe_collection = QuerySecurity.validate_input(collection_name, "collection_name")
-
-    # Secure query for finding config
-    config = db['config'].find_one(
-        QuerySecurity.secure_query({'collection': {'$eq': safe_collection}})
-    )
-
-    if not config:
-        raise ValueError(f"Configuration not found for collection: {safe_collection}")
-
-    # Validate and extract numeric values
-    try:
-        num_required_labels = int(config.get('num_required_labels', 0))
-        num_labels = int(config.get('num_labels', 0))
-    except (TypeError, ValueError):
-        raise ValueError("Invalid numeric values in configuration")
-
-    # Determine state with additional validation
-    if num_labels < 0 or num_required_labels < 0:
-        raise ValueError("Label counts cannot be negative")
-
-    if num_labels < 1:
+    collection = db['config'].find_one({'collection': collection_name})
+    num_required_labels = collection['num_required_labels']
+    num_labels = collection['num_labels']
+    if num_labels < 1 or num_labels == None:
         state = 'unlabeled'
     elif num_labels < num_required_labels:
         state = 'labeling'
     else:
         state = 'labeled'
-
-    # Secure update operation
-    db['config'].update_one(
-        QuerySecurity.secure_query({'collection': {'$eq': safe_collection}}),
-        QuerySecurity.secure_query({'$set': {'state': state}})
-    )
-
+    db['config'].update_one({'collection': collection_name}, {'$set': {'state': state}})
     return state
 
 
 def get_data_states(user):
-    safe_username = QuerySecurity.validate_input(user, "username", max_length=50)
-    if safe_username == 'admin':
+    if user == 'admin':
         collections = get_db_collection_names(0)
     else:
-        collections = get_user_collection(safe_username)
+        collections = get_user_collection(user)
 
     data_and_states = defaultdict(list)
     for collection in collections:
@@ -805,106 +549,51 @@ def get_top_users():
     ranked_users = sorted(ranked_users, key=lambda x: x['score'], reverse=True)
     return ranked_users
 
-#safe
+
 def insert_data_into_collection(collection_name, data):
-    # Validate collection name
-    safe_collection = QuerySecurity.validate_input(
-        collection_name,
-        "collection_name"
-    )
-
-    # Validate data structure
-    if not isinstance(data, list) or not data:
-        raise BadRequest("Data must be a non-empty list")
-
-    # Process and validate each document
-    processed_data = []
-    for idx, row in enumerate(data, 1):
-        if not isinstance(row, dict):
-            raise BadRequest(f"Row {idx} must be a dictionary")
-
-        # Validate individual fields if needed
-        validated_row = {}
-        for k, v in row.items():
-            if not isinstance(k, str) or not k.strip():
-                raise BadRequest(f"Invalid field name in row {idx}")
-            validated_row[k] = v  # Add field-specific validation if needed
-
-        processed_data.append({"data": validated_row})
-
     try:
-        # Perform insertion with timeout protection
-        result = db[safe_collection].insert_many(
-            processed_data,
-            ordered=False  # Continue on errors
-        )
-        return [str(id) for id in result.inserted_ids]
-
+        # Process the data to wrap each row in a "data" key
+        processed_data = [{"data": row} for row in data]
+        result = db[collection_name].insert_many(processed_data)
+        return result.inserted_ids
     except Exception as e:
-        # Convert to controlled error
-        raise BadRequest(f"Insertion failed: {str(e)}")
+        raise Exception(f"Error inserting data into collection {collection_name}: {str(e)}")
 
-#safe
+
 def assign_collection_to_user(username, collection_name):
-    # Validate inputs
-    safe_username = QuerySecurity.validate_input(username, "username")
-    safe_collection = QuerySecurity.validate_input(collection_name, "collection_name")
-
-    # Get user data with secure query
-    user_data = db.users.find_one(
-        QuerySecurity.secure_query({'username': safe_username})
-    )
+    # Get the user's current document to check the type of 'collections'
+    user_data = db.users.find_one({'username': username})
 
     if user_data:
-        # Secure conversion of string collections to array
+        # Check if 'collections' is a string and convert it to an array
         if isinstance(user_data.get('collections'), str):
             db.users.update_one(
-                QuerySecurity.secure_query({'username': safe_username}),
-                QuerySecurity.secure_query({
-                    '$set': {'collections': [user_data['collections']]}
-                })
+                {'username': username},
+                {'$set': {'collections': [user_data['collections']]}}  # Convert string to array
             )
 
-    # Secure final update
+    # Update the user's collections in the "users" collection
     db.users.update_one(
-        QuerySecurity.secure_query({'username': safe_username}),
-        QuerySecurity.secure_query({
-            '$addToSet': {'collections': safe_collection}
-        })
+        {'username': username},
+        {'$addToSet': {'collections': collection_name}}  # Add the collection name if it's not already present
     )
 
-#safe
+
 def remove_data_collection(collection_name):
     try:
-        # Validate collection name
-        safe_collection = QuerySecurity.validate_input(
-            collection_name,
-            "collection_name")
-
-        # Secure collection operations
-        db[safe_collection].drop()
-
-        # Secure config cleanup
-        db['config'].delete_one(
-            QuerySecurity.secure_query({'collection': safe_collection})
-        )
-
-        # Secure user references cleanup
-        db.users.update_many(
-            QuerySecurity.secure_query({'collections': safe_collection}),
-            QuerySecurity.secure_query({'$pull': {'collections': safe_collection}})
-        )
-
+        db[collection_name].drop()
+        config_collection = db['config']
+        config_collection.delete_one({'collection': collection_name})
+        users_collection.update_many(
+            {'collections': collection_name},
+            {'$pull': {'collections': collection_name}})
         return True
     except Exception:
-        # Maintain original error handling
         return False
 
 
-#safe
 def get_assigned_label_db_collection_names(username):
-    safe_username = QuerySecurity.validate_input(username, "username")
-    if safe_username == 'admin':
+    if username == 'admin':
         collections = db.list_collection_names()
         items_to_remove = {'users', 'config'}
         collections = list(set(collections) - items_to_remove)
@@ -917,7 +606,7 @@ def get_assigned_label_db_collection_names(username):
             filtered_list.append(collection)
         return filtered_list
     else:
-        user = users_collection.find_one(QuerySecurity.secure_query({'username': safe_username}))
+        user = users_collection.find_one({"username": username})
         collections = user.get("collections")
         user_filtered_list = []
         for collection in collections:
@@ -928,22 +617,15 @@ def get_assigned_label_db_collection_names(username):
             user_filtered_list.append(collection)
         return user_filtered_list
 
-#safe
+
 def revoke_collection_from_user(username, collection):
-    # Validate inputs using QuerySecurity
-    safe_username = QuerySecurity.validate_input(username, "username", max_length=50)
-    safe_collection = QuerySecurity.validate_input(collection, "collection", max_length=64)
+    users_collection.update_one(
+        {"username": username},
+        {'$pull': {"collections": collection}} )
 
-    # Execute secure update operation
-    db.users.update_one(
-        QuerySecurity.secure_query({"username": safe_username}),
-        QuerySecurity.secure_query({'$pull': {"collections": safe_collection}})
-    )
 
-#safe
 def get_unassigned_label_db_collection_names(username):
-    safe_username = QuerySecurity.validate_input(username, "username")
-    if safe_username == 'admin':
+    if username == 'admin':
         collections = db.list_collection_names()
         items_to_remove = {'users', 'config'}
         collections = list(set(collections) - items_to_remove)
@@ -956,7 +638,7 @@ def get_unassigned_label_db_collection_names(username):
             filtered_list.append(collection)
         return filtered_list
     else:
-        user = users_collection.find_one(QuerySecurity.secure_query({'username': safe_username}))
+        user = users_collection.find_one({"username": username})
         collections = user.get("collections")
         user_filtered_list = []
         for collection in collections:
@@ -969,15 +651,13 @@ def get_unassigned_label_db_collection_names(username):
 
 
 def change_password(username, password):
-    safe_username = QuerySecurity.validate_input(username, "username", max_length=50)
-    if not isinstance(password, str):# or len(password) < 8:
-        raise BadRequest("Password must be a string with at least 8 characters")
-
     new_password_hash = generate_password_hash(password)
-    # Execute secure update
-    result = db.users.update_one(
-        QuerySecurity.secure_query({'username': safe_username}),
+    result = users_collection.update_one(
+        {'username': username},
         {'$set': {'password_hash': new_password_hash}}
     )
     # Check if the user was found and updated
-    return result.modified_count == 1
+    if result.modified_count == 1:
+        return True
+    else:
+        return False
